@@ -86,6 +86,14 @@
 		};
 	}
 
+	function handleInputChange(e) {
+		if (!e.target.validity.valid) {
+			e.target.setAttribute('aria-invalid', true);
+		} else {
+			e.target.setAttribute('aria-invalid', false);
+		}
+	}
+
 	// Need tabs for shader and textures
 	// The vieport can also have a "tab" above it, which is just text in the style of a tab
 	// Add base selection of light maps
@@ -302,6 +310,7 @@
 				pattern="https://sendou.ink/u/.+"
 				form="badge"
 				autocorrect="off"
+				onchange={(e) => handleInputChange(e)}
 			/>
 			<small>Link to the profile of the creator of the badge</small>
 		</label>
@@ -317,6 +326,7 @@
 					form="badge"
 					autocomplete="off"
 					autocorrect="off"
+					onchange={(e) => handleInputChange(e)}
 				/>
 				<small
 					>Name of the tournament the badge was made for, which will be displayed on the site</small
@@ -334,6 +344,7 @@
 					autocomplete="off"
 					autocorrect="off"
 					pattern="^[a-zA-Z0-9]+$"
+					onchange={(e) => handleInputChange(e)}
 				/>
 				<small
 					>Short name of the badge for internal idendification. No spaces or special characters</small
