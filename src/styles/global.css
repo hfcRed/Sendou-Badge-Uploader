@@ -1,0 +1,52 @@
+:root {
+	--pico-form-element-spacing-vertical: 0.5rem;
+	--pico-form-element-spacing-horizontal: 1rem;
+	--pico-group-box-shadow-focus-with-input: 0;
+}
+
+* {
+	margin: 0;
+	min-width: 0;
+}
+
+html {
+	scrollbar-width: thin;
+	scrollbar-color: var(--pico-code-color) var(--pico-code-background-color);
+
+	&::-webkit-scrollbar,
+	&::-webkit-scrollbar-track {
+		background-color: var(--pico-code-background-color);
+		height: 5px;
+		width: 5px;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background-color: var(--pico-code-color);
+		border-radius: 5px;
+	}
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+	overflow-wrap: anywhere;
+}
+
+img,
+svg,
+canvas,
+video,
+audio,
+iframe,
+embed,
+object {
+	display: block;
+}
