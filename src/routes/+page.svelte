@@ -93,7 +93,7 @@
 </script>
 
 <section>
-	<h2>Settings</h2>
+	<h2>Display Settings</h2>
 	<div class="grid-container">
 		<div class="canvas-container">
 			<canvas bind:this={canvas}></canvas>
@@ -130,6 +130,7 @@
 						min="0"
 						max="25"
 						form="badge"
+						autocorrect="off"
 						oninput={(e) => {
 							viewer.setWatermark(e.target.value);
 						}}
@@ -257,12 +258,48 @@
 				placeholder="https://sendou.ink/u/sendou"
 				required
 				minlength="22"
-				maxlength="100"
+				maxlength="50"
 				pattern="https://sendou.ink/u/.+"
 				form="badge"
+				autocorrect="off"
 			/>
 			<small>Link to the profile of the creator of the badge</small>
 		</label>
+		<fieldset class="grid">
+			<label>
+				Tournament Name
+				<input
+					type="text"
+					name="display name"
+					required
+					minlength="1"
+					maxlength="50"
+					form="badge"
+					autocomplete="off"
+					autocorrect="off"
+				/>
+				<small
+					>Name of the tournament the badge was made for, which will be displayed on the site</small
+				>
+			</label>
+			<label>
+				Shorthand Name
+				<input
+					type="text"
+					name="shorthand name"
+					required
+					minlength="1"
+					maxlength="50"
+					form="badge"
+					autocomplete="off"
+					autocorrect="off"
+					pattern="^[a-zA-Z0-9]+$"
+				/>
+				<small
+					>Short name of the badge for internal idendification. No spaces or special characters</small
+				>
+			</label>
+		</fieldset>
 	</div>
 </section>
 <hr />
