@@ -102,7 +102,10 @@
 					<p>Model is not centered, this might not be intentional!</p>
 				</aside>
 			{/if}
+		</div>
+		<form id="badge">
 			<fieldset>
+				<legend>Camera</legend>
 				<label>
 					Camera Distance
 					<input
@@ -133,8 +136,6 @@
 					/>
 				</label>
 			</fieldset>
-		</div>
-		<form id="badge">
 			<fieldset>
 				<legend>Rendering</legend>
 				<label>
@@ -280,9 +281,19 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+		position: sticky;
+		top: 2rem;
+		left: 0;
+		margin-bottom: 2rem;
+
+		@media (max-width: 768px) {
+			position: static;
+			margin-bottom: 0;
+		}
 	}
 
 	canvas {
+		background-color: black;
 		width: 100% !important;
 		height: 100% !important;
 		border: var(--pico-border-width) solid var(--pico-form-element-border-color);
@@ -300,18 +311,12 @@
 	.grid-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-
-		& > * {
-			padding: 1rem;
-		}
+		padding: 1rem;
+		gap: 2rem;
 
 		@media (max-width: 768px) {
 			grid-template-columns: 1fr;
-			gap: 1rem;
-
-			& > * {
-				padding: 0;
-			}
+			padding: 0;
 		}
 	}
 
@@ -348,6 +353,7 @@
 		}
 
 		& .gif-display {
+			background-color: black;
 			width: 100%;
 			aspect-ratio: 1 / 1;
 			border-radius: var(--pico-border-radius);
