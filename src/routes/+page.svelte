@@ -1,4 +1,5 @@
 <script>
+	import { Tabs } from 'bits-ui';
 	import PicoCADViewer from '$lib/picocad';
 	import example from '$lib/picocad/shot.txt?raw';
 	import { onMount } from 'svelte';
@@ -104,132 +105,171 @@
 			{/if}
 		</div>
 		<form id="badge">
-			<fieldset>
-				<legend>Camera</legend>
-				<label>
-					Camera Distance
-					<input
-						name="camera distance"
-						type="range"
-						min="0"
-						max="100"
-						step="1"
-						form="badge"
-						value={cameraDistance}
-						oninput={() => {
-							cameraDistance = parseFloat(event.target.value);
-						}}
-					/>
-					<small>Adjust until model fits into view</small>
-				</label>
-				<label>
-					Watermark
-					<input
-						name="watermark"
-						type="text"
-						min="0"
-						max="25"
-						form="badge"
-						autocorrect="off"
-						oninput={(e) => {
-							viewer.setWatermark(e.target.value);
-						}}
-					/>
-				</label>
-			</fieldset>
-			<fieldset>
-				<legend>Rendering</legend>
-				<label>
-					Render Mode
-					<select
-						name="render mode"
-						value="Texture"
-						onchange={() => (viewer.renderMode = String(event.target.value).toLowerCase())}
-					>
-						<option>Texture</option>
-						<option>Color</option>
-					</select>
-				</label>
-				<label>
-					<input
-						name="shading"
-						type="checkbox"
-						role="switch"
-						onchange={() => {
-							viewer.shading = !viewer.shading;
-						}}
-						checked
-					/>
-					Shading
-				</label>
-			</fieldset>
-			<hr />
-			<fieldset>
-				<legend>Outline</legend>
-				<label>
-					Outline Width
-					<input
-						name="outline width"
-						type="range"
-						min="0"
-						max="25"
-						step="1"
-						value="0"
-						oninput={() => {
-							outline = parseFloat(event.target.value) > 0;
-							viewer.outlineSize = parseFloat(event.target.value);
-						}}
-					/>
-				</label>
-				<label>
-					Outline Color
-					<input
-						name="outline color"
-						type="color"
-						value="#ffffff"
-						oninput={(e) => (viewer.outlineColor = hexToRGB(e.target.value))}
-						disabled={!outline}
-					/>
-				</label>
-			</fieldset>
-			<hr />
-			<fieldset>
-				<legend>Wireframe</legend>
-				<div role="group">
+			<Tabs.Root orientation="horizontal" value="viewport">
+				<Tabs.List>
+					{#snippet child()}
+						<div class="tablist-container">
+							<div class="tablist">
+								<Tabs.Trigger value="viewport">
+									{#snippet child({ props })}
+										<div class="tab">
+											<button {...props}>Viewport</button>
+										</div>
+									{/snippet}
+								</Tabs.Trigger>
+								<Tabs.Trigger value="shader">
+									{#snippet child({ props })}
+										<div class="tab">
+											<button {...props}>Shader</button>
+										</div>
+									{/snippet}
+								</Tabs.Trigger>
+								<Tabs.Trigger value="textures">
+									{#snippet child({ props })}
+										<div class="tab">
+											<button {...props}>Textures</button>
+										</div>
+									{/snippet}
+								</Tabs.Trigger>
+							</div>
+						</div>
+					{/snippet}
+				</Tabs.List>
+				<Tabs.Content value="viewport">
+					<fieldset>
+						<legend>Camera</legend>
+						<label>
+							Camera Distance
+							<input
+								name="camera distance"
+								type="range"
+								min="0"
+								max="100"
+								step="1"
+								form="badge"
+								value={cameraDistance}
+								oninput={() => {
+									cameraDistance = parseFloat(event.target.value);
+								}}
+							/>
+							<small>Adjust until model fits into view</small>
+						</label>
+					</fieldset>
+					<hr />
 					<label>
+						Watermark
 						<input
-							name="wireframe"
-							type="checkbox"
-							role="switch"
-							onchange={() => {
-								viewer.drawWireframe = wireframe = !viewer.drawWireframe;
+							name="watermark"
+							type="text"
+							min="0"
+							max="25"
+							form="badge"
+							autocorrect="off"
+							oninput={(e) => {
+								viewer.setWatermark(e.target.value);
 							}}
 						/>
-						Wireframe
 					</label>
-					<label>
-						<input
-							name="wireframe xray"
-							type="checkbox"
-							role="switch"
-							defaultChecked
-							onchange={() => (viewer.wireframeXray = !viewer.wireframeXray)}
-							disabled={!wireframe}
-						/>
-						Wireframe X-Ray
-					</label>
-				</div>
-				<label>
-					Wireframe Color
-					<input
-						name="wireframe color"
-						type="color"
-						value="#ffffff"
-						oninput={(e) => (viewer.wireframeColor = hexToRGB(e.target.value))}
-						disabled={!wireframe}
-					/>
-				</label>
-			</fieldset>
+				</Tabs.Content>
+				<Tabs.Content value="shader">
+					<fieldset>
+						<legend>Rendering</legend>
+						<label>
+							Render Mode
+							<select
+								name="render mode"
+								value="Texture"
+								onchange={() => (viewer.renderMode = String(event.target.value).toLowerCase())}
+							>
+								<option>Texture</option>
+								<option>Color</option>
+							</select>
+						</label>
+						<label>
+							<input
+								name="shading"
+								type="checkbox"
+								role="switch"
+								onchange={() => {
+									viewer.shading = !viewer.shading;
+								}}
+								checked
+							/>
+							Shading
+						</label>
+					</fieldset>
+					<hr />
+					<fieldset>
+						<legend>Outline</legend>
+						<label>
+							Outline Width
+							<input
+								name="outline width"
+								type="range"
+								min="0"
+								max="25"
+								step="1"
+								value="0"
+								oninput={() => {
+									outline = parseFloat(event.target.value) > 0;
+									viewer.outlineSize = parseFloat(event.target.value);
+								}}
+							/>
+						</label>
+						<label>
+							Outline Color
+							<input
+								name="outline color"
+								type="color"
+								value="#ffffff"
+								oninput={(e) => (viewer.outlineColor = hexToRGB(e.target.value))}
+								disabled={!outline}
+							/>
+						</label>
+					</fieldset>
+					<hr />
+					<fieldset>
+						<legend>Wireframe</legend>
+						<div role="group">
+							<label>
+								<input
+									name="wireframe"
+									type="checkbox"
+									role="switch"
+									onchange={() => {
+										viewer.drawWireframe = wireframe = !viewer.drawWireframe;
+									}}
+								/>
+								Wireframe
+							</label>
+							<label>
+								<input
+									name="wireframe xray"
+									type="checkbox"
+									role="switch"
+									defaultChecked
+									onchange={() => (viewer.wireframeXray = !viewer.wireframeXray)}
+									disabled={!wireframe}
+								/>
+								Wireframe X-Ray
+							</label>
+						</div>
+						<label>
+							Wireframe Color
+							<input
+								name="wireframe color"
+								type="color"
+								value="#ffffff"
+								oninput={(e) => (viewer.wireframeColor = hexToRGB(e.target.value))}
+								disabled={!wireframe}
+							/>
+						</label>
+					</fieldset>
+				</Tabs.Content>
+				<Tabs.Content value="textures">
+					<p>Textures</p>
+				</Tabs.Content>
+			</Tabs.Root>
 		</form>
 	</div>
 </section>
@@ -395,6 +435,42 @@
 			aspect-ratio: 1 / 1;
 			border-radius: var(--pico-border-radius);
 			border: var(--pico-border-width) solid var(--pico-form-element-border-color);
+		}
+	}
+
+	.tablist-container {
+		overflow-x: auto;
+		margin-bottom: 1.5rem;
+		scrollbar-width: none;
+	}
+
+	.tablist {
+		display: flex;
+		border-bottom: 3px solid var(--pico-form-element-border-color);
+	}
+
+	.tab {
+		margin-bottom: -3px;
+		min-width: fit-content;
+
+		& button {
+			--pico-color: var(--pico-color);
+			background-color: transparent;
+			border: none;
+			margin: 0;
+			outline: none;
+			box-shadow: none;
+			border-radius: 0;
+			border-bottom: 3px solid transparent;
+			color: var(--pico-color);
+			padding: 0 0.75rem 0.5rem 0.75rem;
+			transition: none;
+
+			&[aria-selected='true'] {
+				color: var(--pico-h2-color);
+				border-bottom: 3px solid var(--pico-primary);
+				font-weight: 600;
+			}
 		}
 	}
 </style>
