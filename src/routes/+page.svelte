@@ -299,7 +299,7 @@
 	</div>
 	<div class="flex-container">
 		<label>
-			Badge Creator
+			Badge Creator <span class="required">*</span>
 			<input
 				type="url"
 				name="creator"
@@ -316,7 +316,7 @@
 		</label>
 		<fieldset class="grid">
 			<label>
-				Tournament Name
+				Tournament Name <span class="required">*</span>
 				<input
 					type="text"
 					name="display name"
@@ -333,7 +333,7 @@
 				>
 			</label>
 			<label>
-				Shorthand Name
+				Shorthand Name <span class="required">*</span>
 				<input
 					type="text"
 					name="shorthand name"
@@ -351,6 +351,19 @@
 				>
 			</label>
 		</fieldset>
+		<label>
+			Additional Notes
+			<textarea
+				name="notes"
+				rows="3"
+				maxlength="500"
+				form="badge"
+				autocomplete="off"
+				autocorrect="off"
+				onchange={(e) => handleInputChange(e)}
+			></textarea>
+		</label>
+		<small class="required margin">* required</small>
 	</div>
 </section>
 <hr />
@@ -428,6 +441,15 @@
 		& p {
 			color: rgb(249, 195, 214);
 			margin: 0;
+		}
+	}
+
+	.required {
+		color: rgb(189, 66, 109);
+		font-weight: 700;
+
+		&.margin {
+			margin-top: 1rem;
 		}
 	}
 
