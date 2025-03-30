@@ -161,8 +161,8 @@
 					flippedCanvas.width = 128;
 					flippedCanvas.height = 128;
 
-					flippedCtx.translate(128, 128);
-					flippedCtx.scale(-1, -1);
+					flippedCtx.translate(0, 128);
+					flippedCtx.scale(1, -1);
 					flippedCtx.drawImage(tempCanvas, 0, 0);
 
 					outputCtx.fillStyle = 'black';
@@ -177,7 +177,7 @@
 						selected: false
 					};
 
-					frames.unshift(frame);
+					frames.push(frame);
 					resolve();
 				}, 0);
 			});
