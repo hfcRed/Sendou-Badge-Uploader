@@ -11,9 +11,17 @@
 	let cameraDistance = $state(30);
 	let wireframe = $state(false);
 	let outline = $state(false);
+	let workerLoaded = $state(false);
 
 	let loadingGif = $state(false);
 	let loadingImages = $state(false);
+
+	let gifTime = 0;
+	let cameraSpin = 0;
+	let gifInitialSpin = 0;
+	let progress = $state(0);
+
+	let gif = $state(null);
 
 	onMount(() => {
 		viewer = new PicoCADViewer({
@@ -28,14 +36,91 @@
 
 		const center = getModelCenter(viewer);
 
-		let spin = 0;
+		let worker = new Worker('/src/lib/picocad/worker/index.js', {
+			type: 'module'
+		});
+
+		worker.onmessage = (e) => {
+			if (e.data.type === 'load') {
+				workerLoaded = true;
+			}
+
+			if (e.data.type === 'gif') {
+				const fileName = 'test.gif';
+
+				const file = new File([e.data.data], fileName, {
+					type: 'image/gif'
+				});
+
+				const url = URL.createObjectURL(file);
+				gif = url;
+			}
+		};
 
 		viewer.startDrawLoop((dt) => {
-			spin += dt;
-			viewer.setTurntableCamera(cameraDistance, spin, 0.1, center);
+			cameraSpin += dt;
+			viewer.setTurntableCamera(cameraDistance, cameraSpin, 0.1, center);
 			viewer.setLightDirectionFromCamera();
+
+			if (loadingGif) {
+				const gifMaxTime = 30;
+				// Frametime / 1000, so 60 fps = 0.0166666666666667
+				const gifDelay = 0.02;
+				const prev = gifTime;
+				gifTime += dt;
+
+				if (gifTime > gifMaxTime || Math.abs(gifInitialSpin - cameraSpin) >= Math.PI * 2) {
+					loadingGif = false;
+
+					const resolution = viewer.getResolution();
+					const background = viewer.getRenderedBackgroundColor();
+					let palette = null;
+					let transparentIndex = -1;
+
+					if (!viewer.hasHDTexture()) {
+						palette = viewer.getPalette();
+
+						if (palette.length > 256) {
+							palette = null;
+						} else {
+							if (viewer.backgroundColor != null && viewer.backgroundColor[3] < 1) {
+								transparentIndex = palette.length - 1;
+							}
+						}
+					}
+
+					worker.postMessage({
+						type: 'generate',
+						width: resolution.width,
+						height: resolution.height,
+						scale: resolution.scale,
+						delay: Math.round(gifDelay * 1000),
+						background,
+						palette,
+						transparentIndex
+					});
+				} else if (prev === 0 || Math.floor(prev / gifDelay) !== Math.floor(gifTime / gifDelay)) {
+					let data = viewer.getPixels();
+					worker.postMessage(
+						{
+							type: 'frame',
+							data
+						},
+						[data.buffer]
+					);
+
+					progress = Math.floor((Math.abs(gifInitialSpin - cameraSpin) / (Math.PI * 2)) * 100);
+				}
+			}
 		});
 	});
+
+	function startGifRecording() {
+		gif = null;
+		loadingGif = true;
+		gifTime = 0;
+		gifInitialSpin = cameraSpin;
+	}
 
 	function hexToRGB(s) {
 		return [s.slice(1, 3), s.slice(3, 5), s.slice(5, 7)].map((s) => parseInt(s, 16) / 255);
@@ -187,7 +272,7 @@
 							<select
 								name="render mode"
 								value="Texture"
-								onchange={() => (viewer.renderMode = String(event.target.value).toLowerCase())}
+								onchange={(e) => (viewer.renderMode = String(e.target.value).toLowerCase())}
 							>
 								<option>Texture</option>
 								<option>Color</option>
@@ -286,12 +371,12 @@
 	<h2>Files and Data</h2>
 	<div class="grid-container">
 		<div class="gif-container">
-			<button>Generate GIF</button>
+			<button disabled={!workerLoaded || loadingGif} onclick={() => startGifRecording()}
+				>{#if !loadingGif}Generate GIF{:else}{progress} %{/if}</button
+			>
 			<div class="gif-display">
-				{#if loadingGif}
-					<p>Loading...</p>
-				{:else}
-					<img src="" alt="badge gif" />
+				{#if gif}
+					<img src={gif} alt="badge gif" />
 				{/if}
 			</div>
 		</div>
@@ -445,7 +530,7 @@
 	}
 
 	.required {
-		color: rgb(189, 66, 109);
+		color: var(--pico-del-color);
 		font-weight: 700;
 
 		&.margin {
