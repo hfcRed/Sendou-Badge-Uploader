@@ -11,7 +11,7 @@
 
 html {
 	scrollbar-width: thin;
-	scrollbar-color: var(--pico-code-color) var(--pico-code-background-color);
+	scrollbar-color: var(--pico-code-color) transparent;
 
 	&::-webkit-scrollbar,
 	&::-webkit-scrollbar-track {

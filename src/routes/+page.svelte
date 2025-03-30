@@ -19,9 +19,12 @@
 	let gifTime = 0;
 	let cameraSpin = 0;
 	let gifInitialSpin = 0;
-	let progress = $state(0);
+	let gifProgress = $state(0);
+	let imageProgress = $state(0);
 
 	let gif = $state(null);
+	let frames = $state([]);
+	let frameBuffers = [];
 
 	onMount(() => {
 		viewer = new PicoCADViewer({
@@ -31,7 +34,7 @@
 		viewer.load(example);
 		viewer.backgroundColor = [0, 0, 0];
 		viewer.outlineColor = [1, 1, 1, 1];
-		viewer.setResolution(128, 128, 5);
+		viewer.setResolution(128, 128, 4);
 		viewer.cameraFOV = 30;
 
 		const center = getModelCenter(viewer);
@@ -52,8 +55,7 @@
 					type: 'image/gif'
 				});
 
-				const url = URL.createObjectURL(file);
-				gif = url;
+				gif = URL.createObjectURL(file);
 			}
 		};
 
@@ -100,7 +102,8 @@
 						transparentIndex
 					});
 				} else if (prev === 0 || Math.floor(prev / gifDelay) !== Math.floor(gifTime / gifDelay)) {
-					let data = viewer.getPixels();
+					const data = viewer.getPixels();
+
 					worker.postMessage(
 						{
 							type: 'frame',
@@ -109,7 +112,10 @@
 						[data.buffer]
 					);
 
-					progress = Math.floor((Math.abs(gifInitialSpin - cameraSpin) / (Math.PI * 2)) * 100);
+					const newData = viewer.getPixels();
+					frameBuffers.push(newData.buffer);
+
+					gifProgress = Math.floor((Math.abs(gifInitialSpin - cameraSpin) / (Math.PI * 2)) * 100);
 				}
 			}
 		});
@@ -120,6 +126,64 @@
 		loadingGif = true;
 		gifTime = 0;
 		gifInitialSpin = cameraSpin;
+		frameBuffers = [];
+	}
+
+	async function splitGifIntoImages() {
+		frames = [];
+		loadingImages = true;
+
+		const tempCanvas = document.createElement('canvas');
+		const ctx = tempCanvas.getContext('2d');
+		tempCanvas.width = 128;
+		tempCanvas.height = 128;
+
+		const outputCanvas = document.createElement('canvas');
+		const outputCtx = outputCanvas.getContext('2d');
+		outputCanvas.width = 512;
+		outputCanvas.height = 512;
+
+		const totalFrames = frameBuffers.length;
+
+		for (let i = 0; i < frameBuffers.length; i++) {
+			const buffer = frameBuffers[i];
+
+			imageProgress = Math.floor((i / totalFrames) * 100);
+
+			await new Promise((resolve) => {
+				setTimeout(() => {
+					const imageData = new ImageData(new Uint8ClampedArray(buffer), 128, 128);
+
+					ctx.putImageData(imageData, 0, 0);
+
+					const flippedCanvas = document.createElement('canvas');
+					const flippedCtx = flippedCanvas.getContext('2d');
+					flippedCanvas.width = 128;
+					flippedCanvas.height = 128;
+
+					flippedCtx.translate(128, 128);
+					flippedCtx.scale(-1, -1);
+					flippedCtx.drawImage(tempCanvas, 0, 0);
+
+					outputCtx.fillStyle = 'black';
+					outputCtx.fillRect(0, 0, 512, 512);
+					outputCtx.imageSmoothingEnabled = false;
+					outputCtx.drawImage(flippedCanvas, 0, 0, 512, 512);
+
+					const dataURL = outputCanvas.toDataURL('image/png');
+
+					const frame = {
+						url: dataURL,
+						selected: false
+					};
+
+					frames.unshift(frame);
+					resolve();
+				}, 0);
+			});
+		}
+
+		loadingImages = false;
 	}
 
 	function hexToRGB(s) {
@@ -206,21 +270,21 @@
 								<Tabs.Trigger value="viewport">
 									{#snippet child({ props })}
 										<div class="tab">
-											<button {...props}>Viewport</button>
+											<button class="btn-reset" {...props}>Viewport</button>
 										</div>
 									{/snippet}
 								</Tabs.Trigger>
 								<Tabs.Trigger value="shader">
 									{#snippet child({ props })}
 										<div class="tab">
-											<button {...props}>Shader</button>
+											<button class="btn-reset" {...props}>Shader</button>
 										</div>
 									{/snippet}
 								</Tabs.Trigger>
 								<Tabs.Trigger value="textures">
 									{#snippet child({ props })}
 										<div class="tab">
-											<button {...props}>Textures</button>
+											<button class="btn-reset" {...props}>Textures</button>
 										</div>
 									{/snippet}
 								</Tabs.Trigger>
@@ -372,15 +436,35 @@
 	<div class="grid-container">
 		<div class="gif-container">
 			<button disabled={!workerLoaded || loadingGif} onclick={() => startGifRecording()}
-				>{#if !loadingGif}Generate GIF{:else}{progress} %{/if}</button
+				>{#if !loadingGif}Generate GIF{:else}{gifProgress} %{/if}</button
 			>
 			<div class="gif-display">
 				{#if gif}
 					<img src={gif} alt="badge gif" />
 				{/if}
 			</div>
+			<small>The GIF to be displayed on the site</small>
 		</div>
-		<div class="images-container"><button disabled>Generate Images</button></div>
+		<div class="images-container">
+			<button disabled={!gif || loadingImages} onclick={() => splitGifIntoImages()}
+				>{#if !loadingImages}Generate Images{:else}{imageProgress} %{/if}</button
+			>
+			<div class="img-display">
+				{#if frames.length > 0}
+					{#each frames as frame}
+						<button
+							class="btn-reset"
+							data-selected={frame.selected}
+							onclick={() => {
+								frames.forEach((f) => (f.selected = false));
+								frame.selected = true;
+							}}><img src={frame.url} alt="badge" /></button
+						>
+					{/each}
+				{/if}
+			</div>
+			<small>Select an image to be the thumbnail</small>
+		</div>
 	</div>
 	<div class="flex-container">
 		<label>
@@ -554,6 +638,35 @@
 			border-radius: var(--pico-border-radius);
 			border: var(--pico-border-width) solid var(--pico-form-element-border-color);
 		}
+
+		& .img-display {
+			background-color: black;
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			grid-template-rows: repeat(3, 1fr);
+			width: 100%;
+			aspect-ratio: 1 / 1;
+			overflow-y: auto;
+			scrollbar-width: thin;
+			scrollbar-gutter: stable;
+			border-radius: var(--pico-border-radius);
+			border: var(--pico-border-width) solid var(--pico-form-element-border-color);
+
+			& button {
+				border: 2px solid black;
+				border-radius: var(--pico-border-radius);
+
+				&:hover,
+				&:focus-within,
+				&[data-selected='true'] {
+					border: 2px solid var(--pico-primary);
+				}
+			}
+
+			& img {
+				border-radius: var(--pico-border-radius);
+			}
+		}
 	}
 
 	.tablist-container {
@@ -572,17 +685,8 @@
 		min-width: fit-content;
 
 		& button {
-			--pico-color: var(--pico-color);
-			background-color: transparent;
-			border: none;
-			margin: 0;
-			outline: none;
-			box-shadow: none;
-			border-radius: 0;
 			border-bottom: 3px solid transparent;
-			color: var(--pico-color);
 			padding: 0 0.75rem 0.5rem 0.75rem;
-			transition: none;
 
 			&[aria-selected='true'] {
 				color: var(--pico-h2-color);
@@ -590,5 +694,18 @@
 				font-weight: 600;
 			}
 		}
+	}
+
+	.btn-reset {
+		--pico-color: var(--pico-color);
+		background-color: transparent;
+		border: none;
+		margin: 0;
+		outline: none;
+		box-shadow: none;
+		border-radius: 0;
+		color: var(--pico-color);
+		padding: 0;
+		transition: none;
 	}
 </style>
