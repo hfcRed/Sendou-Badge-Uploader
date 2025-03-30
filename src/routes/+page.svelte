@@ -127,6 +127,7 @@
 		gifTime = 0;
 		gifInitialSpin = cameraSpin;
 		frameBuffers = [];
+		frames = [];
 	}
 
 	async function splitGifIntoImages() {
