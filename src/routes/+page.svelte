@@ -24,6 +24,7 @@
 
 	let gif = $state(null);
 	let frames = $state([]);
+	let selectedFrame = $derived.by(() => frames.find((f) => f.selected));
 	let frameBuffers = [];
 
 	onMount(() => {
@@ -122,17 +123,27 @@
 	});
 
 	function startGifRecording() {
-		gif = null;
 		loadingGif = true;
 		gifTime = 0;
 		gifInitialSpin = cameraSpin;
-		frameBuffers = [];
+
+		URL.revokeObjectURL(gif);
+		gif = null;
+
+		frames.forEach((frame) => {
+			URL.revokeObjectURL(frame.url);
+		});
 		frames = [];
+		frameBuffers = [];
 	}
 
 	async function splitGifIntoImages() {
-		frames = [];
 		loadingImages = true;
+
+		frames.forEach((frame) => {
+			URL.revokeObjectURL(frame.url);
+		});
+		frames = [];
 
 		const tempCanvas = document.createElement('canvas');
 		const ctx = tempCanvas.getContext('2d');
@@ -171,14 +182,18 @@
 					outputCtx.imageSmoothingEnabled = false;
 					outputCtx.drawImage(flippedCanvas, 0, 0, 512, 512);
 
-					const dataURL = outputCanvas.toDataURL('image/png');
+					outputCanvas.toBlob((blob) => {
+						const blobUrl = URL.createObjectURL(blob);
 
-					const frame = {
-						url: dataURL,
-						selected: false
-					};
+						const frame = {
+							url: blobUrl,
+							selected: false
+						};
 
-					frames.push(frame);
+						frames.push(frame);
+						resolve();
+					}, 'image/png');
+
 					resolve();
 				}, 0);
 			});
@@ -445,6 +460,7 @@
 				{/if}
 			</div>
 			<small>The GIF to be displayed on the site</small>
+			<input type="hidden" name="gif" value={gif || ''} form="badge" />
 		</div>
 		<div class="images-container">
 			<button disabled={!gif || loadingImages} onclick={() => splitGifIntoImages()}
@@ -465,6 +481,7 @@
 				{/if}
 			</div>
 			<small>Select an image to be the thumbnail</small>
+			<input type="hidden" name="image" value={selectedFrame?.url || ''} form="badge" />
 		</div>
 	</div>
 	<div class="flex-container">
