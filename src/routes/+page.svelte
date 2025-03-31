@@ -6,6 +6,8 @@
 	import { enhance } from '$app/forms';
 	import { decode, encode } from '@jsquash/avif';
 
+	let { data } = $props();
+
 	let canvas;
 	let viewer;
 
@@ -589,12 +591,25 @@
 <hr />
 <section>
 	<h2>Upload</h2>
-	<div class="flex-container">
-		<p>Signed in as <a href="/" target="_blank">hfcRed</a></p>
-		<button type="submit" form="badge" disabled={!gif || !selectedFrame?.url}
-			>Create Pull Request</button
-		>
-	</div>
+	{#if data.loggedIn}
+		<div class="flex-container">
+			<button type="submit" form="badge" disabled={!gif || !selectedFrame?.url}
+				>Create Pull Request</button
+			>
+			<p>
+				<span>Signed in as <a href={data.url} target="_blank">{data.name}</a></span>
+				<span>•</span>
+				<span>
+					<a href="/logout">Logout</a>
+				</span>
+			</p>
+		</div>
+	{:else}
+		<div class="flex-container">
+			<p>Sign in to upload a badge</p>
+			<a href="/login" role="button">Sign In With GitHub</a>
+		</div>
+	{/if}
 </section>
 
 <style>
