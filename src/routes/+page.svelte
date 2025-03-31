@@ -3,6 +3,8 @@
 	import PicoCADViewer from '$lib/picocad';
 	import example from '$lib/picocad/shot.txt?raw';
 	import { onMount } from 'svelte';
+	import { enhance } from '$app/forms';
+	import { decode, encode } from '@jsquash/avif';
 
 	let canvas;
 	let viewer;
@@ -40,7 +42,7 @@
 
 		const center = getModelCenter(viewer);
 
-		let worker = new Worker('/src/lib/picocad/worker/index.js', {
+		let worker = new Worker(new URL('$lib/picocad/worker/index.js', import.meta.url).href, {
 			type: 'module'
 		});
 
@@ -61,7 +63,7 @@
 		};
 
 		viewer.startDrawLoop((dt) => {
-			cameraSpin += dt;
+			cameraSpin += dt * 10;
 			viewer.setTurntableCamera(cameraDistance, cameraSpin, 0.1, center);
 			viewer.setLightDirectionFromCamera();
 
@@ -259,11 +261,44 @@
 		}
 	}
 
-	// Need tabs for shader and textures
-	// The vieport can also have a "tab" above it, which is just text in the style of a tab
-	// Add base selection of light maps
+	async function onsubmit(e) {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
 
-	// Giving the form an ID will allow us to place input/formfield elements and submit button outside of the form using the form attribute
+		const gifResponse = await fetch(gif);
+		const gifBlob = await gifResponse.blob();
+		const gifFile = new File([gifBlob], 'badge.gif', { type: 'image/gif' });
+		formData.set('gif', gifFile);
+
+		const imageResponse = await fetch(selectedFrame.url);
+		const imageBlob = await imageResponse.blob();
+		const imageFile = new File([imageBlob], 'badge.png', { type: 'image/png' });
+		formData.set('png', imageFile);
+
+		const img = document.createElement('img');
+		img.src = selectedFrame.url;
+		await new Promise((resolve) => (img.onload = resolve));
+		const canvas = document.createElement('canvas');
+		[canvas.width, canvas.height] = [img.width, img.height];
+		const ctx = canvas.getContext('2d');
+		ctx.drawImage(img, 0, 0);
+		const data = ctx.getImageData(0, 0, img.width, img.height);
+		const avifBuffer = await encode(data);
+		const avifBlob = new Blob([avifBuffer], { type: 'image/avif' });
+		const avifFile = new File([avifBlob], 'badge.avif', { type: 'image/avif' });
+		const avifUrl = URL.createObjectURL(avifBlob);
+		console.log(avifUrl);
+		formData.set('avif', avifFile);
+
+		const response = await fetch('/', {
+			method: 'POST',
+			body: formData
+		});
+
+		return async ({ update }) => {
+			await update();
+		};
+	}
 </script>
 
 <section>
@@ -277,7 +312,7 @@
 				</aside>
 			{/if}
 		</div>
-		<form id="badge">
+		<form id="badge" method="POST" {onsubmit}>
 			<Tabs.Root orientation="horizontal" value="viewport">
 				<Tabs.List>
 					{#snippet child()}
@@ -314,7 +349,7 @@
 						<label>
 							Camera Distance
 							<input
-								name="camera distance"
+								name="cameraDistance"
 								type="range"
 								min="0"
 								max="100"
@@ -350,7 +385,7 @@
 						<label>
 							Render Mode
 							<select
-								name="render mode"
+								name="renderMode"
 								value="Texture"
 								onchange={(e) => (viewer.renderMode = String(e.target.value).toLowerCase())}
 							>
@@ -377,7 +412,7 @@
 						<label>
 							Outline Width
 							<input
-								name="outline width"
+								name="outlineWidth"
 								type="range"
 								min="0"
 								max="25"
@@ -392,7 +427,7 @@
 						<label>
 							Outline Color
 							<input
-								name="outline color"
+								name="outlineColor"
 								type="color"
 								value="#ffffff"
 								oninput={(e) => (viewer.outlineColor = hexToRGB(e.target.value))}
@@ -417,7 +452,7 @@
 							</label>
 							<label>
 								<input
-									name="wireframe xray"
+									name="wireframeXray"
 									type="checkbox"
 									role="switch"
 									defaultChecked
@@ -430,7 +465,7 @@
 						<label>
 							Wireframe Color
 							<input
-								name="wireframe color"
+								name="wireframeColor"
 								type="color"
 								value="#ffffff"
 								oninput={(e) => (viewer.wireframeColor = hexToRGB(e.target.value))}
@@ -460,7 +495,6 @@
 				{/if}
 			</div>
 			<small>The GIF to be displayed on the site</small>
-			<input type="hidden" name="gif" value={gif || ''} form="badge" />
 		</div>
 		<div class="images-container">
 			<button disabled={!gif || loadingImages} onclick={() => splitGifIntoImages()}
@@ -481,7 +515,6 @@
 				{/if}
 			</div>
 			<small>Select an image to be the thumbnail</small>
-			<input type="hidden" name="image" value={selectedFrame?.url || ''} form="badge" />
 		</div>
 	</div>
 	<div class="flex-container">
@@ -506,7 +539,7 @@
 				Tournament Name <span class="required">*</span>
 				<input
 					type="text"
-					name="display name"
+					name="displayName"
 					required
 					minlength="1"
 					maxlength="50"
@@ -523,7 +556,7 @@
 				Shorthand Name <span class="required">*</span>
 				<input
 					type="text"
-					name="shorthand name"
+					name="shorthandName"
 					required
 					minlength="1"
 					maxlength="50"
@@ -558,7 +591,9 @@
 	<h2>Upload</h2>
 	<div class="flex-container">
 		<p>Signed in as <a href="/" target="_blank">hfcRed</a></p>
-		<button type="submit" form="badge">Create Pull Request</button>
+		<button type="submit" form="badge" disabled={!gif || !selectedFrame?.url}
+			>Create Pull Request</button
+		>
 	</div>
 </section>
 
@@ -674,16 +709,17 @@
 				border: 2px solid black;
 				border-radius: var(--pico-border-radius);
 
-				&:hover,
-				&:focus-within,
+				&:focus-visible,
 				&[data-selected='true'] {
 					border: 2px solid var(--pico-primary);
 				}
 			}
+		}
 
-			& img {
-				border-radius: var(--pico-border-radius);
-			}
+		& img {
+			border-radius: var(--pico-border-radius);
+			width: 100%;
+			height: 100%;
 		}
 	}
 
