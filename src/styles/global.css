@@ -4,6 +4,17 @@
 	--pico-group-box-shadow-focus-with-input: 0;
 }
 
+@media (min-width: 1280px) {
+	.container {
+		max-width: 950px;
+	}
+}
+@media (min-width: 1536px) {
+	.container {
+		max-width: 950px;
+	}
+}
+
 * {
 	margin: 0;
 	min-width: 0;
