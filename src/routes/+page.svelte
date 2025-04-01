@@ -42,7 +42,7 @@
 		viewer.setResolution(128, 128, 4);
 		viewer.cameraFOV = 30;
 
-		const center = getModelCenter(viewer);
+		const center = getModelCenter();
 
 		let worker = new Worker(new URL('$lib/picocad/worker/index.js', import.meta.url).href, {
 			type: 'module'
@@ -124,7 +124,56 @@
 				}
 			}
 		});
+
+		window.addEventListener('paste', (e) => {
+			const text = e.clipboardData.getData('text/plain');
+			if (text) loadModel(text);
+
+			const file = e.clipboardData.files[0];
+			if (file) handleFile(file);
+		});
 	});
+
+	function dropHandle(element, callback) {
+		element.addEventListener('dragenter', (e) => {
+			e.preventDefault();
+			element.setAttribute('data-dragging', true);
+		});
+
+		element.addEventListener('dragleave', (e) => {
+			e.preventDefault();
+			element.removeAttribute('data-dragging');
+		});
+
+		element.addEventListener('dragover', (e) => {
+			e.preventDefault();
+		});
+
+		element.addEventListener('drop', (e) => {
+			e.preventDefault();
+			element.removeAttribute('data-dragging');
+
+			const files = e.dataTransfer.files;
+			if (files) handleFile(files[0]);
+
+			const text = e.dataTransfer.getData('text/plain');
+			if (text) loadModel(text);
+		});
+	}
+
+	function handleFile(file) {
+		const extension = file.name.split('.').pop().toLowerCase();
+		if (extension === 'txt') {
+			loadModel(file);
+		}
+	}
+
+	async function loadModel(source) {
+		const model = await viewer.load(source);
+
+		cameraDistance = model.zoomLevel;
+		getModelCenter();
+	}
 
 	function startGifRecording() {
 		loadingGif = true;
@@ -210,7 +259,7 @@
 		return [s.slice(1, 3), s.slice(3, 5), s.slice(5, 7)].map((s) => parseInt(s, 16) / 255);
 	}
 
-	function getModelCenter(viewer) {
+	function getModelCenter() {
 		const objects = viewer.model.objects;
 		const positions = objects.map((o) => o.position);
 		const vertices = objects.map((o) => o.vertices);
@@ -307,7 +356,7 @@
 	<h2>Display Settings</h2>
 	<div class="grid-container">
 		<div class="canvas-container">
-			<canvas bind:this={canvas}></canvas>
+			<canvas bind:this={canvas} use:dropHandle={() => {}}></canvas>
 			{#if !centered}
 				<aside aria-label="warning" class="alert">
 					<p>Model is not centered, this might not be intentional!</p>
@@ -636,6 +685,10 @@
 		height: 100% !important;
 		border: var(--pico-border-width) solid var(--pico-form-element-border-color);
 		border-radius: var(--pico-border-radius);
+
+		&:global([data-dragging='true']) {
+			border: var(--pico-border-width) solid var(--pico-primary);
+		}
 	}
 
 	legend {
