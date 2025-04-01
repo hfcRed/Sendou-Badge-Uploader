@@ -1,14 +1,18 @@
 <script>
 	import { Tabs } from 'bits-ui';
 	import PicoCADViewer from '$lib/picocad';
+	import { PICO_COLORS } from '$lib/picocad/pico.js';
 	import example from '$lib/picocad/shot.txt?raw';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { decode, encode } from '@jsquash/avif';
+	import defaultLightmap from '$lib/picocad/default-lightmap.png';
 
 	let { data } = $props();
 
-	let canvas;
+	let viewportCanvas;
+	let textureCanvas;
+	let lightmapCanvas;
 	let viewer;
 
 	let centered = $state(true);
@@ -33,7 +37,7 @@
 
 	onMount(() => {
 		viewer = new PicoCADViewer({
-			canvas
+			canvas: viewportCanvas
 		});
 
 		viewer.load(example);
@@ -43,6 +47,16 @@
 		viewer.cameraFOV = 30;
 
 		const center = getModelCenter();
+
+		const image = new Image();
+		image.src = defaultLightmap;
+		image.onload = () => {
+			const ctx = lightmapCanvas.getContext('2d');
+			ctx.drawImage(image, 0, 0);
+		};
+
+		const ctx = textureCanvas.getContext('2d');
+		ctx.putImageData(viewer.getModelTexture(), 0, 0);
 
 		let worker = new Worker(new URL('$lib/picocad/worker/index.js', import.meta.url).href, {
 			type: 'module'
@@ -65,7 +79,7 @@
 		};
 
 		viewer.startDrawLoop((dt) => {
-			cameraSpin += dt * 10;
+			cameraSpin += dt * 1;
 			viewer.setTurntableCamera(cameraDistance, cameraSpin, 0.1, center);
 			viewer.setLightDirectionFromCamera();
 
@@ -132,47 +146,102 @@
 			const file = e.clipboardData.files[0];
 			if (file) handleFile(file);
 		});
-	});
 
-	function dropHandle(element, callback) {
-		element.addEventListener('dragenter', (e) => {
-			e.preventDefault();
-			element.setAttribute('data-dragging', true);
-		});
-
-		element.addEventListener('dragleave', (e) => {
-			e.preventDefault();
-			element.removeAttribute('data-dragging');
-		});
-
-		element.addEventListener('dragover', (e) => {
+		window.addEventListener('dragenter', (e) => {
 			e.preventDefault();
 		});
 
-		element.addEventListener('drop', (e) => {
+		window.addEventListener('dragleave', (e) => {
 			e.preventDefault();
-			element.removeAttribute('data-dragging');
+		});
 
-			const files = e.dataTransfer.files;
-			if (files) handleFile(files[0]);
+		window.addEventListener('dragover', (e) => {
+			e.preventDefault();
+		});
+
+		window.addEventListener('drop', (e) => {
+			e.preventDefault();
+
+			const file = e.dataTransfer.files[0];
+			if (file) handleFile(file);
 
 			const text = e.dataTransfer.getData('text/plain');
-			if (text) loadModel(text);
+			if (text && !file) loadModel(text);
 		});
-	}
+	});
 
 	function handleFile(file) {
 		const extension = file.name.split('.').pop().toLowerCase();
 		if (extension === 'txt') {
 			loadModel(file);
 		}
+		if (['png', 'jpg', 'jpeg', 'bmp', 'gif', 'webp'].includes(extension)) {
+			loadImage(file);
+		}
 	}
 
 	async function loadModel(source) {
 		const model = await viewer.load(source);
 
+		const ctx = textureCanvas.getContext('2d');
+		ctx.putImageData(viewer.getModelTexture(), 0, 0);
+
+		viewer.removeHDTexture();
+
 		cameraDistance = model.zoomLevel;
 		getModelCenter();
+	}
+
+	function loadImage(source) {
+		const url = URL.createObjectURL(source);
+		const img = new Image();
+		img.src = url;
+		img.onload = () => {
+			const canvas = document.createElement('canvas');
+			[canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+			const data = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+
+			const isPico8 = isPico8Texture(data);
+			const isLightmap = data.width === 32 && data.height === 7;
+
+			if (isLightmap) {
+				viewer.setLightMap(data);
+				const ctx = lightmapCanvas.getContext('2d');
+				ctx.putImageData(data, 0, 0);
+
+				const ctx2 = textureCanvas.getContext('2d');
+				ctx2.putImageData(viewer.getModelTexture(), 0, 0);
+				return;
+			}
+
+			if (isPico8) {
+				viewer.removeHDTexture();
+				viewer.setIndexedTexture(data);
+				const ctx = textureCanvas.getContext('2d');
+				ctx.putImageData(data, 0, 0);
+			} else {
+				viewer.setHDTexture(data);
+				const ctx = textureCanvas.getContext('2d');
+				ctx.drawImage(img, 0, 0);
+			}
+		};
+	}
+
+	function isPico8Texture(data) {
+		const colors = new Set(PICO_COLORS.map(([r, g, b]) => rgbToInt(r, g, b)));
+
+		const ints = new Int32Array(data.data.buffer);
+
+		for (let i = 0, n = ints.length; i < n; i++) {
+			const int = ints[i];
+			if (!colors.has(int)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	function startGifRecording() {
@@ -259,6 +328,10 @@
 		return [s.slice(1, 3), s.slice(3, 5), s.slice(5, 7)].map((s) => parseInt(s, 16) / 255);
 	}
 
+	function rgbToInt(r, g, b) {
+		return 0xff000000 | (b << 16) | (g << 8) | r;
+	}
+
 	function getModelCenter() {
 		const objects = viewer.model.objects;
 		const positions = objects.map((o) => o.position);
@@ -338,7 +411,6 @@
 		const avifBlob = new Blob([avifBuffer], { type: 'image/avif' });
 		const avifFile = new File([avifBlob], 'badge.avif', { type: 'image/avif' });
 		const avifUrl = URL.createObjectURL(avifBlob);
-		console.log(avifUrl);
 		formData.set('avif', avifFile);
 
 		const response = await fetch('/', {
@@ -356,7 +428,7 @@
 	<h2>Display Settings</h2>
 	<div class="grid-container">
 		<div class="canvas-container">
-			<canvas bind:this={canvas} use:dropHandle={() => {}}></canvas>
+			<canvas bind:this={viewportCanvas}></canvas>
 			{#if !centered}
 				<aside aria-label="warning" class="alert">
 					<p>Model is not centered, this might not be intentional!</p>
@@ -526,7 +598,10 @@
 					</fieldset>
 				</Tabs.Content>
 				<Tabs.Content value="textures">
-					<p>Textures</p>
+					<h3>Main Texture</h3>
+					<canvas class="texture" width="128" height="120" bind:this={textureCanvas}></canvas>
+					<h3>Lightmap</h3>
+					<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
 				</Tabs.Content>
 			</Tabs.Root>
 		</form>
@@ -683,8 +758,15 @@
 		background-color: black;
 		width: 100% !important;
 		height: 100% !important;
+		aspect-ratio: 1;
 		border: var(--pico-border-width) solid var(--pico-form-element-border-color);
 		border-radius: var(--pico-border-radius);
+
+		&.texture {
+			margin-bottom: 2rem;
+			image-rendering: pixelated;
+			aspect-ratio: unset;
+		}
 
 		&:global([data-dragging='true']) {
 			border: var(--pico-border-width) solid var(--pico-primary);
