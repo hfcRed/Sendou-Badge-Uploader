@@ -10,6 +10,8 @@
 
 	let { data, form } = $props();
 
+	$inspect(form);
+
 	let viewportCanvas;
 	let textureCanvas;
 	let lightmapCanvas;
@@ -854,9 +856,6 @@
 					</aside>
 				{/if}
 			{/if}
-			<aside aria-label="success" class="success form-margin">
-				<p>Pull request created! <a href={'#'} target="_blank">View it here</a></p>
-			</aside>
 			<p>
 				<span>Signed in as <a href={data.url} target="_blank">{data.name}</a></span>
 				<span>•</span>
