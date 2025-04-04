@@ -4,11 +4,11 @@
 	import { PICO_COLORS } from '$lib/picocad/pico.js';
 	import example from '$lib/picocad/example.txt?raw';
 	import { onMount } from 'svelte';
-	import { enhance } from '$app/forms';
+	import { applyAction, deserialize } from '$app/forms';
 	import { decode, encode } from '@jsquash/avif';
 	import defaultLightmap from '$lib/picocad/default-lightmap.png';
 
-	let { data } = $props();
+	let { data, form } = $props();
 
 	let viewportCanvas;
 	let textureCanvas;
@@ -86,7 +86,7 @@
 		};
 
 		viewer.startDrawLoop((dt) => {
-			if (turntable) cameraSpin += dt * rotationSpeed;
+			if (turntable) cameraSpin += dt * rotationSpeed * 10;
 
 			viewer.setTurntableCamera(cameraDistance, cameraSpin, cameraAngle, {
 				x: 0,
@@ -432,12 +432,13 @@
 			method: 'POST',
 			body: formData
 		});
+		const result = deserialize(await response.text());
 
-		return async ({ update }) => {
-			await update();
-		};
+		applyAction(result);
 	}
 </script>
+
+<form id="badge" method="POST" {onsubmit}></form>
 
 <section>
 	<h2>Display Settings</h2>
@@ -487,254 +488,246 @@
 				</aside>
 			{/if}
 		</div>
-		<form id="badge" method="POST" {onsubmit}>
-			<Tabs.Root orientation="horizontal" value="viewport">
-				<Tabs.List>
-					{#snippet child()}
-						<div class="tablist-container">
-							<div class="tablist">
-								<Tabs.Trigger value="viewport">
-									{#snippet child({ props })}
-										<div class="tab">
-											<button class="btn-reset" {...props}>Viewport</button>
-										</div>
-									{/snippet}
-								</Tabs.Trigger>
-								<Tabs.Trigger value="shader">
-									{#snippet child({ props })}
-										<div class="tab">
-											<button class="btn-reset" {...props}>Shader</button>
-										</div>
-									{/snippet}
-								</Tabs.Trigger>
-								<Tabs.Trigger value="textures">
-									{#snippet child({ props })}
-										<div class="tab">
-											<button class="btn-reset" {...props}>Textures</button>
-										</div>
-									{/snippet}
-								</Tabs.Trigger>
-							</div>
+		<Tabs.Root orientation="horizontal" value="viewport">
+			<Tabs.List>
+				{#snippet child()}
+					<div class="tablist-container">
+						<div class="tablist">
+							<Tabs.Trigger value="viewport">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Viewport</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
+							<Tabs.Trigger value="shader">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Shader</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
+							<Tabs.Trigger value="textures">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Textures</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
 						</div>
-					{/snippet}
-				</Tabs.List>
-				<Tabs.Content value="viewport">
-					<fieldset>
-						<legend>Camera</legend>
-						<label>
-							Distance
-							<input
-								name="cameraDistance"
-								type="range"
-								min="0"
-								max="100"
-								step="0.01"
-								form="badge"
-								value={cameraDistance}
-								oninput={() => {
-									cameraDistance = parseFloat(event.target.value);
-								}}
-							/>
-						</label>
-						<label>
-							Height
-							<input
-								name="cameraHeight"
-								type="range"
-								min="-10"
-								max="10"
-								step="0.01"
-								form="badge"
-								bind:value={cameraHeight}
-							/>
-						</label>
-						<label>
-							Tilt
-							<input
-								name="cameraAngle"
-								type="range"
-								min="-1"
-								max="1"
-								step="0.01"
-								form="badge"
-								bind:value={cameraAngle}
-							/>
-						</label>
-						<label>
-							Rotation
-							<input
-								name="cameraSpin"
-								type="range"
-								min="0"
-								max="6.283185307179586"
-								step="0.01"
-								form="badge"
-								oninput={() => {
-									turntable = false;
-									cameraSpin = parseFloat(event.target.value);
-								}}
-							/>
-						</label>
-						<label class="form-margin">
-							<input name="turntable" type="checkbox" role="switch" bind:checked={turntable} />
-							Turntable
-						</label>
-						<label>
-							Rotation Speed
-							<input
-								name="rotationSpeed"
-								type="range"
-								min="0"
-								max="3"
-								step="0.01"
-								form="badge"
-								bind:value={rotationSpeed}
-							/>
-						</label>
-					</fieldset>
-					<hr />
-					<fieldset>
-						<legend>Utilities</legend>
-						<label>
-							<input name="ruler" type="checkbox" role="switch" bind:checked={ruler} />
-							Rulers
-						</label>
-						<label class="form-margin">
-							<input
-								name="rotationOverlay"
-								type="checkbox"
-								role="switch"
-								bind:checked={rotationOverlay}
-							/>
-							Rotation Overlay
-						</label>
-						<button
-							type="button"
-							onclick={() => {
-								const center = getModelCenter();
-								cameraHeight = center.y;
-							}}>Re-calculate Height</button
-						>
-					</fieldset>
-					<hr />
+					</div>
+				{/snippet}
+			</Tabs.List>
+			<Tabs.Content value="viewport">
+				<fieldset>
+					<legend>Camera</legend>
 					<label>
-						Watermark
+						Distance
 						<input
-							name="watermark"
-							type="text"
+							name="cameraDistance"
+							type="range"
 							min="0"
-							max="25"
-							form="badge"
-							autocorrect="off"
-							oninput={(e) => {
-								viewer.setWatermark(e.target.value);
+							max="100"
+							step="0.01"
+							value={cameraDistance}
+							oninput={() => {
+								cameraDistance = parseFloat(event.target.value);
 							}}
 						/>
 					</label>
-				</Tabs.Content>
-				<Tabs.Content value="shader">
-					<fieldset>
-						<legend>Rendering</legend>
-						<label>
-							Render Mode
-							<select
-								name="renderMode"
-								value="Texture"
-								onchange={(e) => (viewer.renderMode = String(e.target.value).toLowerCase())}
-							>
-								<option>Texture</option>
-								<option>Color</option>
-							</select>
-						</label>
+					<label>
+						Height
+						<input
+							name="cameraHeight"
+							type="range"
+							min="-10"
+							max="10"
+							step="0.01"
+							bind:value={cameraHeight}
+						/>
+					</label>
+					<label>
+						Tilt
+						<input
+							name="cameraAngle"
+							type="range"
+							min="-1"
+							max="1"
+							step="0.01"
+							bind:value={cameraAngle}
+						/>
+					</label>
+					<label>
+						Rotation
+						<input
+							name="cameraSpin"
+							type="range"
+							min="0"
+							max="6.283185307179586"
+							step="0.01"
+							oninput={() => {
+								turntable = false;
+								cameraSpin = parseFloat(event.target.value);
+							}}
+						/>
+					</label>
+					<label class="form-margin">
+						<input name="turntable" type="checkbox" role="switch" bind:checked={turntable} />
+						Turntable
+					</label>
+					<label>
+						Rotation Speed
+						<input
+							name="rotationSpeed"
+							type="range"
+							min="0"
+							max="3"
+							step="0.01"
+							bind:value={rotationSpeed}
+						/>
+					</label>
+				</fieldset>
+				<hr />
+				<fieldset>
+					<legend>Utilities</legend>
+					<label>
+						<input name="ruler" type="checkbox" role="switch" bind:checked={ruler} />
+						Rulers
+					</label>
+					<label class="form-margin">
+						<input
+							name="rotationOverlay"
+							type="checkbox"
+							role="switch"
+							bind:checked={rotationOverlay}
+						/>
+						Rotation Overlay
+					</label>
+					<button
+						type="button"
+						onclick={() => {
+							const center = getModelCenter();
+							cameraHeight = center.y;
+						}}>Re-calculate Height</button
+					>
+				</fieldset>
+				<hr />
+				<label>
+					Watermark
+					<input
+						name="watermark"
+						type="text"
+						min="0"
+						max="25"
+						autocorrect="off"
+						oninput={(e) => {
+							viewer.setWatermark(e.target.value);
+						}}
+					/>
+				</label>
+			</Tabs.Content>
+			<Tabs.Content value="shader">
+				<fieldset>
+					<legend>Rendering</legend>
+					<label>
+						Render Mode
+						<select
+							name="renderMode"
+							value="Texture"
+							onchange={(e) => (viewer.renderMode = String(e.target.value).toLowerCase())}
+						>
+							<option>Texture</option>
+							<option>Color</option>
+						</select>
+					</label>
+					<label>
+						<input
+							name="shading"
+							type="checkbox"
+							role="switch"
+							onchange={() => {
+								viewer.shading = !viewer.shading;
+							}}
+							checked
+						/>
+						Shading
+					</label>
+				</fieldset>
+				<hr />
+				<fieldset>
+					<legend>Outline</legend>
+					<label>
+						Outline Width
+						<input
+							name="outlineWidth"
+							type="range"
+							min="0"
+							max="25"
+							step="1"
+							value="0"
+							oninput={() => {
+								outline = parseFloat(event.target.value) > 0;
+								viewer.outlineSize = parseFloat(event.target.value);
+							}}
+						/>
+					</label>
+					<label>
+						Outline Color
+						<input
+							name="outlineColor"
+							type="color"
+							value="#ffffff"
+							oninput={(e) => (viewer.outlineColor = hexToRGB(e.target.value))}
+							disabled={!outline}
+						/>
+					</label>
+				</fieldset>
+				<hr />
+				<fieldset>
+					<legend>Wireframe</legend>
+					<div role="group">
 						<label>
 							<input
-								name="shading"
+								name="wireframe"
 								type="checkbox"
 								role="switch"
 								onchange={() => {
-									viewer.shading = !viewer.shading;
-								}}
-								checked
-							/>
-							Shading
-						</label>
-					</fieldset>
-					<hr />
-					<fieldset>
-						<legend>Outline</legend>
-						<label>
-							Outline Width
-							<input
-								name="outlineWidth"
-								type="range"
-								min="0"
-								max="25"
-								step="1"
-								value="0"
-								oninput={() => {
-									outline = parseFloat(event.target.value) > 0;
-									viewer.outlineSize = parseFloat(event.target.value);
+									viewer.drawWireframe = wireframe = !viewer.drawWireframe;
 								}}
 							/>
+							Wireframe
 						</label>
 						<label>
-							Outline Color
 							<input
-								name="outlineColor"
-								type="color"
-								value="#ffffff"
-								oninput={(e) => (viewer.outlineColor = hexToRGB(e.target.value))}
-								disabled={!outline}
-							/>
-						</label>
-					</fieldset>
-					<hr />
-					<fieldset>
-						<legend>Wireframe</legend>
-						<div role="group">
-							<label>
-								<input
-									name="wireframe"
-									type="checkbox"
-									role="switch"
-									onchange={() => {
-										viewer.drawWireframe = wireframe = !viewer.drawWireframe;
-									}}
-								/>
-								Wireframe
-							</label>
-							<label>
-								<input
-									name="wireframeXray"
-									type="checkbox"
-									role="switch"
-									defaultChecked
-									onchange={() => (viewer.wireframeXray = !viewer.wireframeXray)}
-									disabled={!wireframe}
-								/>
-								Wireframe X-Ray
-							</label>
-						</div>
-						<label>
-							Wireframe Color
-							<input
-								name="wireframeColor"
-								type="color"
-								value="#ffffff"
-								oninput={(e) => (viewer.wireframeColor = hexToRGB(e.target.value))}
+								name="wireframeXray"
+								type="checkbox"
+								role="switch"
+								defaultChecked
+								onchange={() => (viewer.wireframeXray = !viewer.wireframeXray)}
 								disabled={!wireframe}
 							/>
+							Wireframe X-Ray
 						</label>
-					</fieldset>
-				</Tabs.Content>
-				<Tabs.Content value="textures">
-					<h3>Main Texture</h3>
-					<canvas class="texture" width="128" height="120" bind:this={textureCanvas}></canvas>
-					<h3>Lightmap</h3>
-					<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
-				</Tabs.Content>
-			</Tabs.Root>
-		</form>
+					</div>
+					<label>
+						Wireframe Color
+						<input
+							name="wireframeColor"
+							type="color"
+							value="#ffffff"
+							oninput={(e) => (viewer.wireframeColor = hexToRGB(e.target.value))}
+							disabled={!wireframe}
+						/>
+					</label>
+				</fieldset>
+			</Tabs.Content>
+			<Tabs.Content value="textures">
+				<h3>Main Texture</h3>
+				<canvas class="texture" width="128" height="120" bind:this={textureCanvas}></canvas>
+				<h3>Lightmap</h3>
+				<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
+			</Tabs.Content>
+		</Tabs.Root>
 	</div>
 </section>
 <hr />
@@ -797,7 +790,7 @@
 					type="text"
 					name="displayName"
 					required
-					minlength="1"
+					minlength="5"
 					maxlength="50"
 					form="badge"
 					autocomplete="off"
@@ -814,7 +807,7 @@
 					type="text"
 					name="shorthandName"
 					required
-					minlength="1"
+					minlength="5"
 					maxlength="50"
 					form="badge"
 					autocomplete="off"
@@ -850,6 +843,20 @@
 			<button type="submit" form="badge" disabled={!gif || !selectedFrame?.url}
 				>Create Pull Request</button
 			>
+			{#if form}
+				{#if !form.success}
+					<aside aria-label="warning" class="alert form-margin">
+						<p>{form.message}</p>
+					</aside>
+				{:else}
+					<aside aria-label="success" class="success form-margin">
+						<p>Pull request created! <a href={'#'} target="_blank">View it here</a></p>
+					</aside>
+				{/if}
+			{/if}
+			<aside aria-label="success" class="success form-margin">
+				<p>Pull request created! <a href={'#'} target="_blank">View it here</a></p>
+			</aside>
 			<p>
 				<span>Signed in as <a href={data.url} target="_blank">{data.name}</a></span>
 				<span>•</span>
@@ -1023,6 +1030,18 @@
 
 		& p {
 			color: rgb(249, 195, 214);
+			margin: 0;
+		}
+	}
+
+	.success {
+		background-color: rgb(32, 51, 21);
+		border: 1px solid rgb(66, 189, 66);
+		border-radius: var(--pico-border-radius);
+		padding: 1rem;
+
+		& p {
+			color: rgb(195, 249, 195);
 			margin: 0;
 		}
 	}
