@@ -10,8 +10,6 @@
 
 	let { data, form } = $props();
 
-	$inspect(form);
-
 	let viewportCanvas;
 	let textureCanvas;
 	let lightmapCanvas;
