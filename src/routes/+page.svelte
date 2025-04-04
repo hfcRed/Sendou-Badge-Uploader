@@ -2,7 +2,7 @@
 	import { Tabs } from 'bits-ui';
 	import PicoCADViewer from '$lib/picocad';
 	import { PICO_COLORS } from '$lib/picocad/pico.js';
-	import example from '$lib/picocad/shot.txt?raw';
+	import example from '$lib/picocad/example.txt?raw';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { decode, encode } from '@jsquash/avif';
@@ -17,15 +17,21 @@
 
 	let centered = $state(true);
 	let cameraDistance = $state(30);
+	let cameraHeight = $state(0);
+	let cameraAngle = $state(0.1);
+	let rotationSpeed = $state(1);
 	let wireframe = $state(false);
 	let outline = $state(false);
 	let workerLoaded = $state(false);
+	let ruler = $state(false);
+	let rotationOverlay = $state(false);
 
 	let loadingGif = $state(false);
 	let loadingImages = $state(false);
 
 	let gifTime = 0;
-	let cameraSpin = 0;
+	let cameraSpin = $state(0);
+	let turntable = $state(true);
 	let gifInitialSpin = 0;
 	let gifProgress = $state(0);
 	let imageProgress = $state(0);
@@ -47,6 +53,7 @@
 		viewer.cameraFOV = 30;
 
 		const center = getModelCenter();
+		cameraHeight = center.y;
 
 		const image = new Image();
 		image.src = defaultLightmap;
@@ -79,8 +86,14 @@
 		};
 
 		viewer.startDrawLoop((dt) => {
-			cameraSpin += dt * 1;
-			viewer.setTurntableCamera(cameraDistance, cameraSpin, 0.1, center);
+			if (turntable) cameraSpin += dt * rotationSpeed;
+
+			viewer.setTurntableCamera(cameraDistance, cameraSpin, cameraAngle, {
+				x: 0,
+				y: cameraHeight,
+				z: 0
+			});
+
 			viewer.setLightDirectionFromCamera();
 
 			if (loadingGif) {
@@ -131,6 +144,7 @@
 						[data.buffer]
 					);
 
+					// This introduces a performance hit, need to find a better way to do this
 					const newData = viewer.getPixels();
 					frameBuffers.push(newData.buffer);
 
@@ -245,6 +259,7 @@
 	}
 
 	function startGifRecording() {
+		turntable = true;
 		loadingGif = true;
 		gifTime = 0;
 		gifInitialSpin = cameraSpin;
@@ -429,6 +444,43 @@
 	<div class="grid-container">
 		<div class="canvas-container">
 			<canvas bind:this={viewportCanvas}></canvas>
+			{#if ruler}
+				<div class="ruler">
+					<div class="horizontal">
+						{#each { length: 5 }}
+							<div class="big"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="medium"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+						{/each}
+						<div class="big"></div>
+					</div>
+					<div class="vertical">
+						{#each { length: 5 }}
+							<div class="big"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="medium"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+							<div class="small"></div>
+						{/each}
+						<div class="big"></div>
+					</div>
+				</div>
+			{/if}
+			{#if rotationOverlay}
+				<img class="overlay" src="/src/lib/picocad/rotation.gif" alt="" />
+			{/if}
 			{#if !centered}
 				<aside aria-label="warning" class="alert">
 					<p>Model is not centered, this might not be intentional!</p>
@@ -470,21 +522,99 @@
 					<fieldset>
 						<legend>Camera</legend>
 						<label>
-							Camera Distance
+							Distance
 							<input
 								name="cameraDistance"
 								type="range"
 								min="0"
 								max="100"
-								step="1"
+								step="0.01"
 								form="badge"
 								value={cameraDistance}
 								oninput={() => {
 									cameraDistance = parseFloat(event.target.value);
 								}}
 							/>
-							<small>Adjust until model fits into view</small>
 						</label>
+						<label>
+							Height
+							<input
+								name="cameraHeight"
+								type="range"
+								min="-10"
+								max="10"
+								step="0.01"
+								form="badge"
+								bind:value={cameraHeight}
+							/>
+						</label>
+						<label>
+							Tilt
+							<input
+								name="cameraAngle"
+								type="range"
+								min="-1"
+								max="1"
+								step="0.01"
+								form="badge"
+								bind:value={cameraAngle}
+							/>
+						</label>
+						<label>
+							Rotation
+							<input
+								name="cameraSpin"
+								type="range"
+								min="0"
+								max="6.283185307179586"
+								step="0.01"
+								form="badge"
+								oninput={() => {
+									turntable = false;
+									cameraSpin = parseFloat(event.target.value);
+								}}
+							/>
+						</label>
+						<label class="form-margin">
+							<input name="turntable" type="checkbox" role="switch" bind:checked={turntable} />
+							Turntable
+						</label>
+						<label>
+							Rotation Speed
+							<input
+								name="rotationSpeed"
+								type="range"
+								min="0"
+								max="3"
+								step="0.01"
+								form="badge"
+								bind:value={rotationSpeed}
+							/>
+						</label>
+					</fieldset>
+					<hr />
+					<fieldset>
+						<legend>Utilities</legend>
+						<label>
+							<input name="ruler" type="checkbox" role="switch" bind:checked={ruler} />
+							Rulers
+						</label>
+						<label class="form-margin">
+							<input
+								name="rotationOverlay"
+								type="checkbox"
+								role="switch"
+								bind:checked={rotationOverlay}
+							/>
+							Rotation Overlay
+						</label>
+						<button
+							type="button"
+							onclick={() => {
+								const center = getModelCenter();
+								cameraHeight = center.y;
+							}}>Re-calculate Height</button
+						>
 					</fieldset>
 					<hr />
 					<label>
@@ -737,6 +867,9 @@
 </section>
 
 <style>
+	.form-margin {
+		margin-bottom: var(--pico-spacing);
+	}
 	.canvas-container {
 		width: 100%;
 		aspect-ratio: 1 / 1;
@@ -749,9 +882,87 @@
 		margin-bottom: 2rem;
 
 		@media (max-width: 768px) {
-			position: static;
+			position: relative;
 			margin-bottom: 0;
+			top: 0;
 		}
+	}
+
+	.ruler {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+
+		.horizontal {
+			position: absolute;
+			top: calc(50% - 7.5px);
+			left: 0;
+			width: 100%;
+			display: flex;
+			justify-content: space-around;
+
+			.big {
+				width: 1.5px;
+				height: 15px;
+			}
+			.medium {
+				width: 1.5px;
+				height: 10px;
+				margin-top: 2.5px;
+			}
+			.small {
+				width: 1px;
+				height: 5px;
+				margin-top: 5px;
+			}
+		}
+
+		.vertical {
+			position: absolute;
+			top: 0;
+			left: calc(50% - 7.5px);
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-around;
+
+			.big {
+				width: 15px;
+				height: 1.5px;
+			}
+			.medium {
+				width: 10px;
+				height: 1.5px;
+				margin-left: 2.5px;
+			}
+			.small {
+				width: 5px;
+				height: 1px;
+				margin-left: 5px;
+			}
+		}
+
+		.small,
+		.medium,
+		.big {
+			background-color: white;
+			filter: drop-shadow(0 0 1px black);
+		}
+	}
+
+	.overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+		opacity: 0.5;
+		border: var(--pico-border-width) solid var(--pico-form-element-border-color);
+		border-radius: var(--pico-border-radius);
 	}
 
 	canvas {
