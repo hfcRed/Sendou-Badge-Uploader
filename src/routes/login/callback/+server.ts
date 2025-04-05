@@ -30,6 +30,7 @@ export async function GET(event: RequestEvent) {
 		}
 	});
 	const user = await response.json();
+	console.log('User data:', user);
 
 	event.cookies.set(
 		'github_access_token',
