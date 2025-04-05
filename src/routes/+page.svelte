@@ -7,6 +7,7 @@
 	import { applyAction, deserialize } from '$app/forms';
 	import { decode, encode } from '@jsquash/avif';
 	import defaultLightmap from '$lib/picocad/default-lightmap.png';
+	import rotationGif from '$lib/picocad/rotation.gif';
 
 	let { data, form } = $props();
 
@@ -528,7 +529,7 @@
 				</div>
 			{/if}
 			{#if rotationOverlay}
-				<img class="overlay" src="/src/lib/picocad/rotation.gif" alt="" />
+				<img class="overlay" src={rotationGif} alt="" />
 			{/if}
 			{#if !centered}
 				<aside aria-label="warning" class="alert">
