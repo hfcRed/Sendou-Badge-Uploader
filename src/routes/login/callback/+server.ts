@@ -26,11 +26,13 @@ export async function GET(event: RequestEvent) {
 
 	const response = await fetch('https://api.github.com/user', {
 		headers: {
-			Authorization: `Bearer ${githubAccessToken}`
+			Authorization: `Bearer ${githubAccessToken}`,
+			Accept: 'application/vnd.github.v3+json',
+			'Content-Type': 'application/json',
+			'User-Agent': 'Badge Uploader'
 		}
 	});
-	const user = await response.text();
-	console.log('User data:', user);
+	const user = await response.json();
 
 	event.cookies.set(
 		'github_access_token',
