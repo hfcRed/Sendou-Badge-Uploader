@@ -25,6 +25,7 @@
 	let workerLoaded = $state(false);
 	let ruler = $state(false);
 	let rotationOverlay = $state(false);
+	let updateType = $state('existing');
 
 	let loadingGif = $state(false);
 	let loadingImages = $state(false);
@@ -438,7 +439,7 @@
 		const avifUrl = URL.createObjectURL(avifBlob);
 		formData.set('avif', avifFile);
 
-		const response = await fetch('?/createPR', {
+		const response = await fetch(e.submitter.attributes.formaction.value, {
 			method: 'POST',
 			body: formData
 		});
@@ -446,6 +447,40 @@
 
 		submitting = false;
 		applyAction(result);
+	}
+
+	async function downloadFile(type) {
+		const link = document.createElement('a');
+		const name = shorthandName ? shorthandName.toLowerCase() : 'badge';
+		switch (type) {
+			case 'gif':
+				link.href = gif;
+				link.download = `${name}.gif`;
+				link.click();
+				break;
+			case 'png':
+				link.href = selectedFrame.url;
+				link.download = `${name}.png`;
+				link.click();
+				break;
+			case 'avif':
+				const img = document.createElement('img');
+				img.src = selectedFrame.url;
+				const canvas = document.createElement('canvas');
+				[canvas.width, canvas.height] = [img.width, img.height];
+				const ctx = canvas.getContext('2d');
+				ctx.drawImage(img, 0, 0);
+				const data = ctx.getImageData(0, 0, img.width, img.height);
+				const avifBuffer = await encode(data);
+				const avifBlob = new Blob([avifBuffer], { type: 'image/avif' });
+				const avifUrl = URL.createObjectURL(avifBlob);
+				link.href = avifUrl;
+				link.download = `${name}.avif`;
+				link.click();
+				break;
+		}
+
+		link.remove();
 	}
 </script>
 
@@ -844,45 +879,140 @@
 				onchange={(e) => handleInputChange(e)}
 			></textarea>
 		</label>
-		<small class="required margin">* required</small>
 	</div>
 </section>
 <hr />
 <section>
-	<h2>Upload</h2>
-	{#if data.loggedIn}
-		<div class="flex-container">
-			<button
-				type="submit"
-				form="badge"
-				disabled={!gif || !selectedFrame?.url || submitting}
-				aria-busy={submitting}>Create Pull Request</button
-			>
-			{#if form && !submitting}
-				{#if !form.success}
-					<aside aria-label="warning" class="alert form-margin">
-						<p>{form.message}</p>
-					</aside>
+	<h2>Pull Request</h2>
+	<div class="flex-container">
+		<Tabs.Root value="automatic">
+			<Tabs.List>
+				{#snippet child()}
+					<div class="tablist-container">
+						<div class="tablist">
+							<Tabs.Trigger value="automatic">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Automatic</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
+							<Tabs.Trigger value="manual">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Manual</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
+						</div>
+					</div>
+				{/snippet}
+			</Tabs.List>
+			<Tabs.Content value="automatic">
+				<p>Automatically create and update pull requests</p>
+				{#if data.loggedIn}
+					<h2>Create New</h2>
+					<button
+						type="submit"
+						form="badge"
+						disabled={!gif || !selectedFrame?.url || submitting}
+						aria-busy={submitting}
+						formaction="?/createPR">Create New Pull Request</button
+					>
+					<h2>Update Existing</h2>
+					<label>
+						Pull Request URL <span class="required">*</span>
+						<input
+							type="url"
+							name="prUrl"
+							placeholder="https://github.com/Sendouc/sendou.ink/pull/1"
+							required
+							minlength="43"
+							maxlength="50"
+							pattern="https://github.com/.+"
+							form="badge"
+							autocomplete="off"
+							autocorrect="off"
+							onchange={(e) => handleInputChange(e)}
+						/>
+					</label>
+					<fieldset>
+						<input
+							type="radio"
+							name="updateType"
+							id="existing"
+							bind:group={updateType}
+							value="existing"
+							form="badge"
+						/>
+						<label for="existing">Update existing badge</label>
+						<input
+							type="radio"
+							name="updateType"
+							id="new"
+							bind:group={updateType}
+							value="new"
+							form="badge"
+						/>
+						<label for="new">Add additional badge</label>
+					</fieldset>
+					<label>
+						Shorthand Name <span class="required">*</span>
+						<input
+							type="text"
+							name="updateName"
+							required
+							disabled={updateType === 'new'}
+							minlength="5"
+							maxlength="50"
+							form="badge"
+							autocomplete="off"
+							autocorrect="off"
+							pattern="^[a-zA-Z0-9]+$"
+							onchange={(e) => handleInputChange(e)}
+							aria-invalid={updateType === 'new' ? null : undefined}
+						/>
+						<small>Shorthand name from the PR of the badge you want to update</small>
+					</label>
+					<button type="submit" form="badge" formaction="?/updatePR">Update Pull Request</button>
+					{#if form && !submitting}
+						{#if !form.success}
+							<aside aria-label="warning" class="alert form-margin">
+								<p>{form.message}</p>
+							</aside>
+						{:else}
+							<aside aria-label="success" class="success form-margin">
+								<p>Pull Request created! <a href={form.message} target="_blank">View PR</a></p>
+							</aside>
+						{/if}
+					{/if}
+					<hr />
+					<p>
+						<span>Logged in as <a href={data.url} target="_blank">{data.name}</a></span>
+						<span>•</span>
+						<span>
+							<a href="/logout">Logout</a>
+						</span>
+					</p>
 				{:else}
-					<aside aria-label="success" class="success form-margin">
-						<p>Pull Request created! <a href={form.message} target="_blank">View PR</a></p>
-					</aside>
+					<p>Login to upload a badge</p>
+					<a href="/login" role="button">Login With GitHub</a>
 				{/if}
-			{/if}
-			<p>
-				<span>Signed in as <a href={data.url} target="_blank">{data.name}</a></span>
-				<span>•</span>
-				<span>
-					<a href="/logout">Logout</a>
-				</span>
-			</p>
-		</div>
-	{:else}
-		<div class="flex-container">
-			<p>Sign in to upload a badge</p>
-			<a href="/login" role="button">Sign In With GitHub</a>
-		</div>
-	{/if}
+			</Tabs.Content>
+			<Tabs.Content value="manual">
+				<p>Download the badge files to create a Pull Request manually</p>
+				<hr />
+				<fieldset class="grid">
+					<button disabled={!gif} onclick={() => downloadFile('gif')}>Download GIF</button>
+					<button disabled={!selectedFrame} onclick={() => downloadFile('png')}>Download PNG</button
+					>
+					<button disabled={!selectedFrame} onclick={() => downloadFile('avif')}
+						>Download AVIF</button
+					>
+				</fieldset>
+			</Tabs.Content>
+		</Tabs.Root>
+	</div>
 </section>
 
 <style>
@@ -1061,10 +1191,6 @@
 	.required {
 		color: var(--pico-del-color);
 		font-weight: 700;
-
-		&.margin {
-			margin-top: 1rem;
-		}
 	}
 
 	.gif-container,

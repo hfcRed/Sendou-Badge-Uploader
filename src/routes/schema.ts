@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 
-export const FormSchema = v.object({
+export const CreateSchema = v.object({
 	creator: v.pipe(
 		v.string(),
 		v.nonEmpty(),
@@ -26,4 +26,30 @@ export const FormSchema = v.object({
 	avif: v.file()
 });
 
-export type Form = v.InferInput<typeof FormSchema>;
+export const UpdateSchema = v.object({
+	...CreateSchema.entries,
+	prUrl: v.pipe(
+		v.string(),
+		v.nonEmpty(),
+		v.minLength(43),
+		v.maxLength(50),
+		v.trim(),
+		v.url(),
+		v.startsWith('https://github.com/')
+	),
+	updateType: v.picklist(['existing', 'new']),
+	updateName: v.optional(
+		v.pipe(
+			v.string(),
+			v.nonEmpty(),
+			v.minLength(5),
+			v.maxLength(50),
+			v.trim(),
+			v.toLowerCase(),
+			v.regex(/^[a-zA-Z0-9]+$/)
+		)
+	)
+});
+
+export type Create = v.InferInput<typeof CreateSchema>;
+export type Update = v.InferInput<typeof UpdateSchema>;
