@@ -1004,7 +1004,6 @@
 						</span>
 					</p>
 				{:else}
-					<p>Login to upload a badge</p>
 					<a href="/login" role="button">Login With GitHub</a>
 				{/if}
 			</Tabs.Content>
