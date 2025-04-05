@@ -55,6 +55,8 @@
 		viewer.setResolution(128, 128, 4);
 		viewer.cameraFOV = 30;
 
+		cameraDistance = viewer.model.zoomLevel;
+
 		const center = getModelCenter();
 		cameraHeight = center.y;
 
@@ -89,7 +91,7 @@
 		};
 
 		viewer.startDrawLoop((dt) => {
-			if (turntable) cameraSpin += dt * rotationSpeed * 10;
+			if (turntable) cameraSpin += dt * rotationSpeed * 1;
 
 			viewer.setTurntableCamera(cameraDistance, cameraSpin, cameraAngle, {
 				x: 0,
