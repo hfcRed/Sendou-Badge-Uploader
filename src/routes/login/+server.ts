@@ -4,7 +4,7 @@ import type { RequestEvent } from '../$types';
 
 export function GET(event: RequestEvent) {
 	const state = generateState();
-	const url = github.createAuthorizationURL(state, ['gist']);
+	const url = github.createAuthorizationURL(state, ['public_repo']);
 
 	event.cookies.set('github_auth_state', state, {
 		httpOnly: true,

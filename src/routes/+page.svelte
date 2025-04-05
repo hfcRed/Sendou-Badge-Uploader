@@ -40,6 +40,8 @@
 	let frames = $state([]);
 	let selectedFrame = $derived.by(() => frames.find((f) => f.selected));
 	let frameBuffers = [];
+	let shorthandName = $state('');
+	let submitting = $state(false);
 
 	onMount(() => {
 		viewer = new PicoCADViewer({
@@ -402,16 +404,22 @@
 
 	async function onsubmit(e) {
 		e.preventDefault();
+		submitting = true;
+
 		const formData = new FormData(e.currentTarget);
 
 		const gifResponse = await fetch(gif);
 		const gifBlob = await gifResponse.blob();
-		const gifFile = new File([gifBlob], 'badge.gif', { type: 'image/gif' });
+		const gifFile = new File([gifBlob], `${shorthandName.toLowerCase()}.gif`, {
+			type: 'image/gif'
+		});
 		formData.set('gif', gifFile);
 
 		const imageResponse = await fetch(selectedFrame.url);
 		const imageBlob = await imageResponse.blob();
-		const imageFile = new File([imageBlob], 'badge.png', { type: 'image/png' });
+		const imageFile = new File([imageBlob], `${shorthandName.toLowerCase()}.png`, {
+			type: 'image/png'
+		});
 		formData.set('png', imageFile);
 
 		const img = document.createElement('img');
@@ -424,16 +432,19 @@
 		const data = ctx.getImageData(0, 0, img.width, img.height);
 		const avifBuffer = await encode(data);
 		const avifBlob = new Blob([avifBuffer], { type: 'image/avif' });
-		const avifFile = new File([avifBlob], 'badge.avif', { type: 'image/avif' });
+		const avifFile = new File([avifBlob], `${shorthandName.toLowerCase()}.avif`, {
+			type: 'image/avif'
+		});
 		const avifUrl = URL.createObjectURL(avifBlob);
 		formData.set('avif', avifFile);
 
-		const response = await fetch('/', {
+		const response = await fetch('?/createPR', {
 			method: 'POST',
 			body: formData
 		});
 		const result = deserialize(await response.text());
 
+		submitting = false;
 		applyAction(result);
 	}
 </script>
@@ -814,6 +825,7 @@
 					autocorrect="off"
 					pattern="^[a-zA-Z0-9]+$"
 					onchange={(e) => handleInputChange(e)}
+					bind:value={shorthandName}
 				/>
 				<small
 					>Short name of the badge for internal idendification. No spaces or special characters</small
@@ -840,17 +852,20 @@
 	<h2>Upload</h2>
 	{#if data.loggedIn}
 		<div class="flex-container">
-			<button type="submit" form="badge" disabled={!gif || !selectedFrame?.url}
-				>Create Pull Request</button
+			<button
+				type="submit"
+				form="badge"
+				disabled={!gif || !selectedFrame?.url || submitting}
+				aria-busy={submitting}>Create Pull Request</button
 			>
-			{#if form}
+			{#if form && !submitting}
 				{#if !form.success}
 					<aside aria-label="warning" class="alert form-margin">
 						<p>{form.message}</p>
 					</aside>
 				{:else}
 					<aside aria-label="success" class="success form-margin">
-						<p>Pull request created! <a href={'#'} target="_blank">View it here</a></p>
+						<p>Pull Request created! <a href={form.message} target="_blank">View PR</a></p>
 					</aside>
 				{/if}
 			{/if}

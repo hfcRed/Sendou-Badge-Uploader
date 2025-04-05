@@ -17,6 +17,7 @@ export const FormSchema = v.object({
 		v.minLength(5),
 		v.maxLength(50),
 		v.trim(),
+		v.toLowerCase(),
 		v.regex(/^[a-zA-Z0-9]+$/)
 	),
 	notes: v.optional(v.pipe(v.string(), v.minLength(0), v.maxLength(500), v.trim())),
