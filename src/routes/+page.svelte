@@ -921,7 +921,7 @@
 					>
 					<h2>Update Existing</h2>
 					<label>
-						Pull Request URL <span class="required">*</span>
+						Pull Request <span class="required">*</span>
 						<input
 							type="url"
 							name="prUrl"
@@ -957,7 +957,7 @@
 						<label for="new">Add additional badge</label>
 					</fieldset>
 					<label>
-						Shorthand Name <span class="required">*</span>
+						Existing Shorthand Name <span class="required">*</span>
 						<input
 							type="text"
 							name="updateName"
@@ -972,9 +972,15 @@
 							onchange={(e) => handleInputChange(e)}
 							aria-invalid={updateType === 'new' ? null : undefined}
 						/>
-						<small>Shorthand name from the PR of the badge you want to update</small>
+						<small>Shorthand name of the badge you want to update from the PR</small>
 					</label>
-					<button type="submit" form="badge" formaction="?/updatePR">Update Pull Request</button>
+					<button
+						type="submit"
+						form="badge"
+						disabled={!gif || !selectedFrame?.url || submitting}
+						aria-busy={submitting}
+						formaction="?/updatePR">Update Pull Request</button
+					>
 					{#if form && !submitting}
 						{#if !form.success}
 							<aside aria-label="warning" class="alert form-margin">
