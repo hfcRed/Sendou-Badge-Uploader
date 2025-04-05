@@ -3,14 +3,9 @@ import type { OAuth2Tokens } from 'arctic';
 import type { RequestEvent } from './$types';
 
 export async function GET(event: RequestEvent) {
-	console.log('Received callback from GitHub:', event.url.toString());
 	const storedState = event.cookies.get('github_auth_state') ?? null;
 	const code = event.url.searchParams.get('code') ?? null;
 	const state = event.url.searchParams.get('state') ?? null;
-	console.log('Stored state:', storedState);
-	console.log('Code:', code);
-	console.log('State:', state);
-	console.log('Cookies:', event.cookies.getAll());
 
 	if (!storedState || !code || !state) {
 		return new Response('Missing parameters', { status: 400 });
@@ -26,19 +21,15 @@ export async function GET(event: RequestEvent) {
 		console.error('Failed to validate authorization code', e);
 		return new Response('Failed to validate authorization code', { status: 500 });
 	}
-	console.log('Tokens:', tokens);
 
 	const githubAccessToken = tokens.accessToken();
-
-	console.log('Access token:', githubAccessToken);
 
 	const response = await fetch('https://api.github.com/user', {
 		headers: {
 			Authorization: `Bearer ${githubAccessToken}`
 		}
 	});
-	console.log('Response status:', response.status);
-	const user = await response.json();
+	const user = await response.text();
 	console.log('User data:', user);
 
 	event.cookies.set(
