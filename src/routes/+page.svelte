@@ -489,6 +489,11 @@
 
 <form id="badge" method="POST" {onsubmit}></form>
 
+<hgroup>
+	<h1>Upload Badges</h1>
+	<p>Generate badge files and create Pull Requests automatically</p>
+</hgroup>
+<hr />
 <section>
 	<h2>Display Settings</h2>
 	<div class="grid-container">
@@ -1039,6 +1044,9 @@
 </section>
 
 <style>
+	hgroup {
+		margin-block: 1rem;
+	}
 	.form-margin {
 		margin-bottom: var(--pico-spacing);
 	}

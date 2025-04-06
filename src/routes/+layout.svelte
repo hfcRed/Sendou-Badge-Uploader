@@ -15,7 +15,7 @@
 		</ul>
 		<ul>
 			<li><a href="/">Upload</a></li>
-			<li><a href="/learn">Learn</a></li>
+			<li><a href="/resources">Resources</a></li>
 		</ul>
 	</nav>
 </header>
