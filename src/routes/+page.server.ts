@@ -60,7 +60,8 @@ export const actions = {
 		const headers = {
 			Authorization: `Bearer ${locals.user.token}`,
 			Accept: 'application/vnd.github.v3+json',
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'User-Agent': 'Badge Uploader'
 		};
 
 		// Check if there is already a pull request with the same branch name
@@ -246,7 +247,6 @@ export const actions = {
 		}
 
 		const BASE_URL = 'https://api.github.com';
-		const BASE_BRANCH = 'main';
 		const REPO_OWNER = 'hfcRed';
 		const REPO_NAME = 'PR-Testing';
 		const FILE_PATH = 'homemade.ts';
@@ -269,7 +269,8 @@ export const actions = {
 		const headers = {
 			Authorization: `Bearer ${locals.user.token}`,
 			Accept: 'application/vnd.github.v3+json',
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'User-Agent': 'Badge Uploader'
 		};
 
 		// Check if the pull request actually exists
@@ -438,6 +439,95 @@ export const actions = {
 				headers,
 				result.output.avif
 			);
+		} else if (result.output.updateType === 'new') {
+			const badges = await fetch(
+				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
+				{
+					method: 'GET',
+					headers
+				}
+			);
+			const badgesJson = await badges.json();
+			const badgesText = atob(badgesJson.content);
+			const arrayMatch =
+				badgesText.match(/export const homemadeBadges: BadgeInfo\[\] = \[([\s\S]*?)\];/) || '';
+			const arrayText = `[${arrayMatch[1]}]`;
+			const jsonCompatible = arrayText
+				.replace(/^\s*\/\/.*$/gm, '')
+				.replace(/,(\s*[\]}])/g, '$1')
+				.replace(/(\{|,)\s*(\w+)\s*:/g, '$1 "$2":');
+
+			const badgeList = JSON.parse(jsonCompatible);
+
+			const exists = badgeList.some((badge: { fileName: string }) => badge.fileName === SHORT_NAME);
+
+			if (exists) {
+				return fail(400, {
+					success: false,
+					message: 'New badge shorthand name already exists!'
+				});
+			}
+
+			const creator = await fetch(
+				`${CREATOR}?_data=features%2Fuser-page%2Froutes%2Fu.%24identifier`
+			);
+			const creatorJson = await creator.json();
+
+			const newBadge = {
+				displayName: DISPLAY_NAME,
+				fileName: SHORT_NAME,
+				authorDiscordId: creatorJson.user.discordId
+			};
+			const newBadgeEntry = `\t{\n\t\tdisplayName: "${newBadge.displayName}",\n\t\tfileName: "${newBadge.fileName}",\n\t\tauthorDiscordId: "${newBadge.authorDiscordId}",\n\t},\n`;
+			const lastBracketIndex = badgesText.lastIndexOf('];');
+			const updatedBadgesText =
+				badgesText.slice(0, lastBracketIndex) + newBadgeEntry + badgesText.slice(lastBracketIndex);
+
+			// Get the forked repos homemade.ts file
+			const forkBadges = await fetch(
+				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
+				{
+					method: 'GET',
+					headers
+				}
+			);
+			const forkBadgesJson = await forkBadges.json();
+
+			// Update the forked repos homemade.ts file with the new badge
+			await fetch(`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`, {
+				method: 'PUT',
+				headers,
+				body: JSON.stringify({
+					message: `Update homemade.ts file`,
+					branch: branchName,
+					content: btoa(updatedBadgesText),
+					sha: forkBadgesJson.sha
+				})
+			});
+
+			await uploadFile(
+				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.gif`,
+				branchName,
+				headers,
+				result.output.gif
+			);
+			await uploadFile(
+				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.png`,
+				branchName,
+				headers,
+				result.output.png
+			);
+			await uploadFile(
+				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.avif`,
+				branchName,
+				headers,
+				result.output.avif
+			);
+
+			return {
+				success: true,
+				message: prJson.html_url
+			};
 		}
 	}
 } satisfies Actions;

@@ -912,9 +912,10 @@
 				{/snippet}
 			</Tabs.List>
 			<Tabs.Content value="automatic">
-				<p>Automatically create and update pull requests</p>
+				<p>Automatically create and update Pull Requests</p>
+				<hr />
 				{#if data.loggedIn}
-					<h2>Create New</h2>
+					<h3>Create New</h3>
 					<button
 						type="submit"
 						form="badge"
@@ -922,14 +923,13 @@
 						aria-busy={submitting}
 						formaction="?/createPR">Create New Pull Request</button
 					>
-					<h2>Update Existing</h2>
+					<h3>Update Existing</h3>
 					<label>
 						Pull Request <span class="required">*</span>
 						<input
 							type="url"
 							name="prUrl"
 							placeholder="https://github.com/Sendouc/sendou.ink/pull/1"
-							required
 							minlength="43"
 							maxlength="50"
 							pattern="https://github.com/.+"
@@ -964,7 +964,6 @@
 						<input
 							type="text"
 							name="updateName"
-							required
 							disabled={updateType === 'new'}
 							minlength="5"
 							maxlength="50"
@@ -1001,6 +1000,10 @@
 						<span>•</span>
 						<span>
 							<a href="/logout">Logout</a>
+						</span>
+						<span>•</span>
+						<span>
+							<a href="https://github.com/Sendouc/sendou.ink/pulls" target="_blank">View all PRs</a>
 						</span>
 					</p>
 				{:else}
@@ -1142,7 +1145,7 @@
 	}
 
 	legend {
-		color: var(--pico-h2-color);
+		color: var(--pico-h3-color);
 		font-weight: 700;
 		font-size: 1.5rem;
 		margin-bottom: 1rem;
