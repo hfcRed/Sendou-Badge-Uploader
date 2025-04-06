@@ -8,6 +8,16 @@
 	import { decode, encode } from '@jsquash/avif';
 	import defaultLightmap from '$lib/picocad/default-lightmap.png';
 	import rotationGif from '$lib/picocad/rotation.gif';
+	import {
+		urlCompressModel,
+		urlDecompressModel,
+		lzwNumbersToBitStream,
+		toByteString,
+		fromByteString,
+		bitStreamToLZWNumbers
+	} from '$lib/picocad/model-compression';
+	import { compress, decompress } from '$lib/picocad/lzw.js';
+	import { set } from 'valibot';
 
 	let { data, form } = $props();
 
@@ -45,6 +55,10 @@
 	let shorthandName = $state('');
 	let submitting = $state(false);
 
+	let storedModels = $state([]);
+	let selectedStorageModel = $derived(storedModels.find((m) => m.selected));
+	let saveExampleModel = false;
+
 	onMount(() => {
 		viewer = new PicoCADViewer({
 			canvas: viewportCanvas
@@ -78,6 +92,10 @@
 		worker.onmessage = (e) => {
 			if (e.data.type === 'load') {
 				workerLoaded = true;
+				if (saveExampleModel) {
+					saveToStorage();
+					saveExampleModel = false;
+				}
 			}
 
 			if (e.data.type === 'gif') {
@@ -188,6 +206,8 @@
 			const text = e.dataTransfer.getData('text/plain');
 			if (text && !file) loadModel(text);
 		});
+
+		loadModelPreviews();
 	});
 
 	function handleFile(file) {
@@ -238,7 +258,7 @@
 
 			if (isPico8) {
 				viewer.removeHDTexture();
-				viewer.setIndexedTexture(data);
+				viewer.setIndexTexture(data);
 				const ctx = textureCanvas.getContext('2d');
 				ctx.putImageData(data, 0, 0);
 			} else {
@@ -485,6 +505,89 @@
 
 		link.remove();
 	}
+
+	function loadFromStorage() {
+		const selectedModel = storedModels.find((model) => model.selected);
+		const value = localStorage.getItem(selectedModel.name);
+		if (value) {
+			const data = JSON.parse(value);
+			loadModel(urlDecompressModel(data.model));
+			cameraDistance = data.cameraDistance;
+			cameraHeight = data.cameraHeight;
+			cameraAngle = data.cameraAngle;
+			cameraSpin = data.cameraSpin;
+			rotationSpeed = data.rotationSpeed;
+		}
+	}
+
+	function loadModelPreviews() {
+		storedModels = [];
+
+		const keys = Object.keys(localStorage);
+
+		if (keys.length === 0) {
+			saveExampleModel = true;
+		}
+
+		for (const key of keys) {
+			const value = localStorage.getItem(key);
+			if (value) {
+				const data = JSON.parse(value);
+				const imageData = fromByteString(
+					decompress(bitStreamToLZWNumbers(fromByteString(atob(data.image))))
+				);
+
+				const imageString = byteArrayToString(imageData);
+
+				storedModels.push({
+					name: data.name,
+					image: imageString,
+					selected: false
+				});
+			}
+		}
+	}
+
+	function byteArrayToString(byteArray) {
+		let result = '';
+		for (let i = 0; i < byteArray.length; i++) {
+			result += String.fromCharCode(byteArray[i]);
+		}
+		return result;
+	}
+
+	function saveToStorage() {
+		const data = viewer.getPixels();
+		const imageData = new ImageData(new Uint8ClampedArray(data), 128, 128);
+		const canvas = document.createElement('canvas');
+		const ctx = canvas.getContext('2d');
+		[canvas.width, canvas.height] = [128, 128];
+		ctx.putImageData(imageData, 0, 0);
+		const imageBase64 = canvas.toDataURL('image/png');
+
+		const json = JSON.stringify({
+			cameraDistance,
+			cameraHeight,
+			cameraAngle,
+			cameraSpin,
+			rotationSpeed,
+			watermark: viewer.getWatermark(),
+			model: urlCompressModel(viewer.model),
+			name: viewer.model.name,
+			image: btoa(toByteString(lzwNumbersToBitStream(compress(imageBase64))))
+		});
+
+		localStorage.setItem(viewer.model.name, json);
+		loadModelPreviews();
+	}
+
+	function deleteFromStorage() {
+		const selectedModel = storedModels.find((model) => model.selected);
+		if (!selectedModel) return;
+
+		localStorage.removeItem(selectedModel.name);
+		storedModels = storedModels.filter((model) => model.name !== selectedModel.name);
+	}
 </script>
 
 <form id="badge" method="POST" {onsubmit}></form>
@@ -565,6 +668,13 @@
 								{#snippet child({ props })}
 									<div class="tab">
 										<button class="btn-reset" {...props}>Textures</button>
+									</div>
+								{/snippet}
+							</Tabs.Trigger>
+							<Tabs.Trigger value="models">
+								{#snippet child({ props })}
+									<div class="tab">
+										<button class="btn-reset" {...props}>Models</button>
 									</div>
 								{/snippet}
 							</Tabs.Trigger>
@@ -781,6 +891,32 @@
 				<h3>Lightmap</h3>
 				<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
 			</Tabs.Content>
+			<Tabs.Content value="models">
+				<div class="images-container">
+					<fieldset class="grid">
+						<button onclick={() => saveToStorage()}>Save</button>
+						<button onclick={() => loadFromStorage()} disabled={!selectedStorageModel}>Load</button>
+						<button onclick={() => deleteFromStorage()} disabled={!selectedStorageModel}
+							>Delete</button
+						>
+					</fieldset>
+					<div class="img-display">
+						{#each storedModels as model}
+							<button
+								class="btn-reset model-preview"
+								data-selected={model.selected}
+								onclick={() => {
+									storedModels.forEach((m) => (m.selected = false));
+									model.selected = true;
+								}}
+							>
+								<small>{model.name}</small>
+								<img src={model.image} alt={model.name} draggable="false" />
+							</button>
+						{/each}
+					</div>
+				</div>
+			</Tabs.Content>
 		</Tabs.Root>
 	</div>
 </section>
@@ -794,7 +930,7 @@
 			>
 			<div class="gif-display">
 				{#if gif}
-					<img src={gif} alt="badge gif" />
+					<img src={gif} alt="badge gif" draggable="false" />
 				{/if}
 			</div>
 			<small>The GIF to be displayed on the site</small>
@@ -812,7 +948,7 @@
 							onclick={() => {
 								frames.forEach((f) => (f.selected = false));
 								frame.selected = true;
-							}}><img src={frame.url} alt="badge" /></button
+							}}><img src={frame.url} alt="badge" draggable="false" /></button
 						>
 					{/each}
 				{/if}
@@ -1265,6 +1401,28 @@
 			}
 		}
 
+		& .model-preview {
+			display: flex;
+			flex-direction: column;
+			padding: 0.25rem;
+			aspect-ratio: 1 / 1;
+			margin-bottom: 0.5rem;
+
+			& img {
+				scale: 1 -1;
+			}
+
+			& small {
+				background-color: var(--pico-form-element-background-color);
+				padding: 0 0.25rem;
+				border-radius: var(--pico-border-radius);
+				margin: 0;
+				text-overflow: ellipsis;
+				text-wrap: nowrap;
+				overflow: hidden;
+			}
+		}
+
 		& img {
 			border-radius: var(--pico-border-radius);
 			width: 100%;
@@ -1274,13 +1432,30 @@
 
 	.tablist-container {
 		overflow-x: auto;
-		margin-bottom: 1.5rem;
-		scrollbar-width: none;
+		margin-bottom: 1rem;
+		scrollbar-width: thin;
+		overflow-y: hidden;
+		scrollbar-gutter: stable;
+		scrollbar-color: rgba(136, 145, 164, 0.25) transparent;
+		padding-bottom: 0.5rem;
+
+		&::-webkit-scrollbar,
+		&::-webkit-scrollbar-track {
+			background-color: transparent;
+			height: 5px;
+			width: 5px;
+		}
+
+		&::-webkit-scrollbar-thumb {
+			background-color: rgba(136, 145, 164, 0.25);
+			border-radius: 5px;
+		}
 	}
 
 	.tablist {
 		display: flex;
 		border-bottom: 3px solid var(--pico-form-element-border-color);
+		min-width: fit-content;
 	}
 
 	.tab {
@@ -1289,7 +1464,7 @@
 
 		& button {
 			border-bottom: 3px solid transparent;
-			padding: 0 0.75rem 0.5rem 0.75rem;
+			padding: 0 0.5rem 0.5rem 0.5rem;
 
 			&[aria-selected='true'] {
 				color: var(--pico-h2-color);

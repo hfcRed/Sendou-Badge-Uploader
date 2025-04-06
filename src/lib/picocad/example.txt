@@ -1,4 +1,4 @@
-picocad;example;12;1;0
+picocad;example;7;1;0
 {
 {
  name='cube', pos={0,-0.5,0}, rot={0,0,0},
