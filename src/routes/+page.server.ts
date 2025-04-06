@@ -25,6 +25,7 @@ export const actions = {
 		if (!result.success) {
 			return fail(400, {
 				success: false,
+				for: 'create',
 				message: 'Validation failed, did you fill out all required fields correctly?'
 			});
 		}
@@ -32,6 +33,7 @@ export const actions = {
 		if (!locals.user) {
 			return fail(401, {
 				success: false,
+				for: 'create',
 				message: 'You must be logged into GitHub to open a Pull Request!'
 			});
 		}
@@ -53,6 +55,7 @@ export const actions = {
 		) {
 			return fail(400, {
 				success: false,
+				for: 'create',
 				message: 'File names must match the badge shorthand name!'
 			});
 		}
@@ -77,6 +80,7 @@ export const actions = {
 		if (prCheckJson.length > 0) {
 			return fail(400, {
 				success: false,
+				for: 'create',
 				message:
 					'Pull Request already exists! If this is your Pull Request, use the "Update Existing" option instead.'
 			});
@@ -106,6 +110,7 @@ export const actions = {
 		if (exists) {
 			return fail(400, {
 				success: false,
+				for: 'create',
 				message: 'Badge shorthand name already exists!'
 			});
 		}
@@ -218,6 +223,7 @@ export const actions = {
 
 		return {
 			success: true,
+			for: 'create',
 			message: prJson.html_url
 		};
 	},
@@ -228,6 +234,7 @@ export const actions = {
 		if (!result.success) {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'Validation failed, did you fill out all required fields correctly?'
 			});
 		}
@@ -235,6 +242,7 @@ export const actions = {
 		if (result.output.updateType === 'existing' && !result.output.updateName) {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'Please provide the name of the badge you want to update!'
 			});
 		}
@@ -242,6 +250,7 @@ export const actions = {
 		if (!locals.user) {
 			return fail(401, {
 				success: false,
+				for: 'update',
 				message: 'You must be logged into GitHub to update a Pull Request!'
 			});
 		}
@@ -262,6 +271,7 @@ export const actions = {
 		) {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'File names must match the badge shorthand name!'
 			});
 		}
@@ -286,6 +296,7 @@ export const actions = {
 		if (prJson.status === '404') {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'Pull request not found!'
 			});
 		}
@@ -293,6 +304,7 @@ export const actions = {
 		if (prJson.state !== 'open') {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'Pull request is not open!'
 			});
 		}
@@ -300,6 +312,7 @@ export const actions = {
 		if (prJson.base.repo.full_name !== `${REPO_OWNER}/${REPO_NAME}`) {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'Pull request is not from the correct repository!'
 			});
 		}
@@ -313,6 +326,7 @@ export const actions = {
 		if (prJson.user.login !== userJson.login) {
 			return fail(400, {
 				success: false,
+				for: 'update',
 				message: 'You are not the owner of this pull request!'
 			});
 		}
@@ -344,6 +358,7 @@ export const actions = {
 			if (exists) {
 				return fail(400, {
 					success: false,
+					for: 'update',
 					message: 'New badge shorthand name already exists!'
 				});
 			}
@@ -355,6 +370,7 @@ export const actions = {
 			if (!updateNameExists) {
 				return fail(400, {
 					success: false,
+					for: 'update',
 					message: 'Old badge shorthand name does not exist!'
 				});
 			}
@@ -378,6 +394,7 @@ export const actions = {
 			if (!matchResult || matchResult.length === 0) {
 				return fail(400, {
 					success: false,
+					for: 'update',
 					message: 'Could not locate the badge entry to update'
 				});
 			}
@@ -439,6 +456,12 @@ export const actions = {
 				headers,
 				result.output.avif
 			);
+
+			return {
+				success: true,
+				for: 'update',
+				message: prJson.html_url
+			};
 		} else if (result.output.updateType === 'new') {
 			const badges = await fetch(
 				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
@@ -464,6 +487,7 @@ export const actions = {
 			if (exists) {
 				return fail(400, {
 					success: false,
+					for: 'update',
 					message: 'New badge shorthand name already exists!'
 				});
 			}
@@ -526,6 +550,7 @@ export const actions = {
 
 			return {
 				success: true,
+				for: 'update',
 				message: prJson.html_url
 			};
 		}

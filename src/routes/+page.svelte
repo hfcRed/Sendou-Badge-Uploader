@@ -923,6 +923,17 @@
 						aria-busy={submitting}
 						formaction="?/createPR">Create New Pull Request</button
 					>
+					{#if form && form.for === 'create' && !submitting}
+						{#if !form.success}
+							<aside aria-label="warning" class="alert form-margin">
+								<p>{form.message}</p>
+							</aside>
+						{:else}
+							<aside aria-label="success" class="success form-margin">
+								<p>Pull Request created! <a href={form.message} target="_blank">View PR</a></p>
+							</aside>
+						{/if}
+					{/if}
 					<h3>Update Existing</h3>
 					<label>
 						Pull Request <span class="required">*</span>
@@ -948,7 +959,8 @@
 							value="existing"
 							form="badge"
 						/>
-						<label for="existing">Update existing badge</label>
+						<label for="existing">Update badge</label>
+
 						<input
 							type="radio"
 							name="updateType"
@@ -957,7 +969,7 @@
 							value="new"
 							form="badge"
 						/>
-						<label for="new">Add additional badge</label>
+						<label for="new">Add badge</label>
 					</fieldset>
 					<label>
 						Existing Shorthand Name <span class="required">*</span>
@@ -983,14 +995,14 @@
 						aria-busy={submitting}
 						formaction="?/updatePR">Update Pull Request</button
 					>
-					{#if form && !submitting}
+					{#if form && form.for === 'update' && !submitting}
 						{#if !form.success}
 							<aside aria-label="warning" class="alert form-margin">
 								<p>{form.message}</p>
 							</aside>
 						{:else}
 							<aside aria-label="success" class="success form-margin">
-								<p>Pull Request created! <a href={form.message} target="_blank">View PR</a></p>
+								<p>Pull Request updated! <a href={form.message} target="_blank">View PR</a></p>
 							</aside>
 						{/if}
 					{/if}
