@@ -68,7 +68,6 @@ export const actions = {
 			}
 
 			const badgesJson = await fetchBadgesFile(REPO_OWNER, BASE_BRANCH, headers);
-			console.log(badgesJson);
 			const badgesText = atob(badgesJson.content);
 			const badgeList = await parseBadgeList(badgesText);
 

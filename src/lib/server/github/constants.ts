@@ -5,7 +5,7 @@ const dev = import.meta.env.DEV;
 
 export const BASE_URL = 'https://api.github.com';
 export const BASE_BRANCH = dev ? 'main' : 'rewrite';
-export const REPO_OWNER = dev ? 'hfcRed' : 'Sendou';
+export const REPO_OWNER = dev ? 'hfcRed' : 'Sendouc';
 export const REPO_NAME = dev ? 'PR-Testing' : 'sendou.ink';
 export const FILE_PATH = dev ? 'homemade.ts' : 'app/features/badges/homemade.ts';
 
