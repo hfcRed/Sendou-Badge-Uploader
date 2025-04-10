@@ -1,38 +1,45 @@
-# sv
+<div align="center">
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+# Sendou Badge Uploader
 
-## Creating a project
+[![wakatime](https://wakatime.com/badge/user/7100369a-eb08-483f-96e8-41accea7b5a0/project/03d44809-c91d-42e6-bfbc-376955a16ee7.svg)](https://wakatime.com/badge/user/7100369a-eb08-483f-96e8-41accea7b5a0/project/03d44809-c91d-42e6-bfbc-376955a16ee7)
 
-If you're seeing this, you've probably already done this step. Congrats!
+Website for generating and uploading tournament badges for [Sendou.ink](https://sendou.ink)
 
-```bash
-# create a new project in the current directory
-npx sv create
+</div>
 
-# create a new project in my-app
-npx sv create my-app
-```
+---
 
-## Developing
+## Tech Stack
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+- SvelteKit
+- Typescript
 
-```bash
-npm run dev
+## Running Locally
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+If you dont already have NVM installed, download the latest `nvm-setup.zip` from [here](https://github.com/coreybutler/nvm-windows/releases), then extract the zip and run the installer.
 
-## Building
-
-To create a production version of your app:
+If you are on a Unix based machine like Linux or MacOS, run the following command to install NVM:
 
 ```bash
-npm run build
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 ```
 
-You can preview the production build with `npm run preview`.
+You can verify that NVM is installed by running:
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```bash
+nvm --version
+```
+
+After installing NVM run the following commands in the directory of the project:
+
+- `nvm use` to switch to the required Node version.
+  - If the required version is not installed, you will be prompted to run the `nvm install` command.
+  - After installing the required version, run `nvm use` again
+- `npm install` to install the dependencies
+
+To start testing locally you can use the following commands:
+
+- `npm run dev` to start a local dev server at `localhost:5173`
+- `npm run build` to create a build of the website
+- `npm run preview` to preview the build at `localhost:4173`
