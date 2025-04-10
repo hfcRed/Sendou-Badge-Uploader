@@ -1,12 +1,15 @@
-import { github } from '$lib/server/github';
+import type { RequestHandler } from './$types';
 import { generateState } from 'arctic';
-import type { RequestEvent } from '../$types';
+import { redirect } from '@sveltejs/kit';
+import { githubClient } from '$lib/server/github/constants';
 
-export function GET(event: RequestEvent) {
+export const GET: RequestHandler = ({ cookies, locals }) => {
+	if (locals.user) redirect(302, '/');
+
 	const state = generateState();
-	const url = github.createAuthorizationURL(state, ['public_repo']);
+	const url = githubClient.createAuthorizationURL(state, ['public_repo']);
 
-	event.cookies.set('github_auth_state', state, {
+	cookies.set('github_auth_state', state, {
 		httpOnly: true,
 		maxAge: 60 * 10,
 		secure: import.meta.env.PROD,
@@ -20,4 +23,4 @@ export function GET(event: RequestEvent) {
 			Location: url.toString()
 		}
 	});
-}
+};

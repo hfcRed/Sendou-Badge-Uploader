@@ -50,6 +50,3 @@ export const UpdateSchema = v.object({
 		)
 	)
 });
-
-export type Create = v.InferInput<typeof CreateSchema>;
-export type Update = v.InferInput<typeof UpdateSchema>;

@@ -1,4 +1,5 @@
-import type { Login } from '$lib/server/github';
+import type { GithubLogin } from '$lib/server/github/constants';
+
 declare global {
 	namespace App {
 		// interface Error {}
@@ -6,7 +7,7 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 		interface Locals {
-			user: Login;
+			user: GithubLogin;
 		}
 	}
 }

@@ -10,7 +10,7 @@ import { parsePicoCADModel } from "./model-parser";
 import { luma, rgb01to255, rgbToInt } from "./color";
 import { lazyLoadedFontImage } from "./text.js";
 
-export default class PicoCADViewer {
+export class PicoCADViewer {
 	/**
 	 * @param {object} [options]
 	 * @param {HTMLCanvasElement} [options.canvas] The canvas to render to. If not provided one will be created.

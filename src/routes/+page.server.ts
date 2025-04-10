@@ -1,7 +1,33 @@
-import * as v from 'valibot';
-import { CreateSchema, UpdateSchema } from './schema';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
+import { BASE_BRANCH, REPO_OWNER, REPO_NAME } from '$lib/server/github/constants';
+import {
+	createGitHubHeaders,
+	checkPullRequest,
+	fetchBadgesFile,
+	updateBadgesFile,
+	uploadFile,
+	deleteFile,
+	createForkIfNeeded,
+	createBranch,
+	createPullRequest,
+	getPullRequestDetails,
+	getUserData
+} from '$lib/server/github/helpers';
+import {
+	parseBadgeList,
+	createBadgeEntry,
+	addBadgeToFile,
+	replaceBadgeInFile,
+	fetchCreatorDiscordId,
+	checkBadgeNameExists,
+	type BadgeInfo
+} from '$lib/server/github/badges';
+import {
+	validateCreateRequest,
+	validateUpdateRequest,
+	checkUserAuthentication
+} from '$lib/server/validation/validation';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
@@ -19,586 +45,217 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions = {
 	createPR: async ({ request, locals }) => {
-		const formData = await request.formData();
-		const result = v.safeParse(CreateSchema, Object.fromEntries(formData.entries()));
+		try {
+			const result = await validateCreateRequest(request);
+			if (!result.success) return result.error;
 
-		if (!result.success) {
-			return fail(400, {
-				success: false,
-				for: 'create',
-				message: 'Validation failed, did you fill out all required fields correctly?'
-			});
-		}
+			const user = checkUserAuthentication(locals);
+			if (!user.success) return user.error;
 
-		if (!locals.user) {
-			return fail(401, {
-				success: false,
-				for: 'create',
-				message: 'You must be logged into GitHub to open a Pull Request!'
-			});
-		}
+			const { shorthandName, displayName, creator, notes, gif, png, avif } = result.output;
+			const username = locals.user.name;
+			const headers = createGitHubHeaders(locals.user.token);
 
-		const BASE_URL = 'https://api.github.com';
-		const BASE_BRANCH = 'main';
-		const REPO_OWNER = 'hfcRed';
-		const REPO_NAME = 'PR-Testing';
-		const FILE_PATH = 'homemade.ts';
-		const USERNAME = locals.user.name;
-		const SHORT_NAME = result.output.shorthandName;
-		const DISPLAY_NAME = result.output.displayName;
-		const CREATOR = result.output.creator;
+			const prCheckJson = await checkPullRequest(username, shorthandName, headers);
 
-		if (
-			result.output.gif.name !== `${SHORT_NAME}.gif` ||
-			result.output.png.name !== `${SHORT_NAME}.png` ||
-			result.output.avif.name !== `${SHORT_NAME}.avif`
-		) {
-			return fail(400, {
-				success: false,
-				for: 'create',
-				message: 'File names must match the badge shorthand name!'
-			});
-		}
-
-		const headers = {
-			Authorization: `Bearer ${locals.user.token}`,
-			Accept: 'application/vnd.github.v3+json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'Badge Uploader'
-		};
-
-		// Check if there is already a pull request with the same branch name
-		const prCheck = await fetch(
-			`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/pulls?head=${USERNAME}:${SHORT_NAME}`,
-			{
-				method: 'GET',
-				headers
+			if (prCheckJson.length > 0) {
+				return fail(400, {
+					success: false,
+					for: 'create',
+					message:
+						'Pull Request already exists! If this is your Pull Request, use the "Update Existing" option instead.'
+				});
 			}
-		);
-		const prCheckJson = await prCheck.json();
 
-		if (prCheckJson.length > 0) {
-			return fail(400, {
+			const badgesJson = await fetchBadgesFile(REPO_OWNER, BASE_BRANCH, headers);
+			const badgesText = atob(badgesJson.content);
+			const badgeList = await parseBadgeList(badgesText);
+
+			if (checkBadgeNameExists(badgeList, shorthandName)) {
+				return fail(400, {
+					success: false,
+					for: 'create',
+					message: 'Badge shorthand name already exists!'
+				});
+			}
+
+			const discordId = await fetchCreatorDiscordId(creator);
+
+			const newBadge: BadgeInfo = {
+				displayName: displayName,
+				fileName: shorthandName,
+				authorDiscordId: discordId
+			};
+			const newBadgeEntry = createBadgeEntry(newBadge);
+			const updatedBadgesText = addBadgeToFile(badgesText, newBadgeEntry);
+
+			await createForkIfNeeded(username, headers);
+			await createBranch(username, shorthandName, headers);
+
+			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
+			await updateBadgesFile(
+				username,
+				shorthandName,
+				updatedBadgesText,
+				forkBadgesJson.sha,
+				headers
+			);
+
+			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
+			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
+			await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
+
+			const prJson = await createPullRequest(
+				username,
+				shorthandName,
+				displayName,
+				creator,
+				notes,
+				headers
+			);
+
+			return {
+				success: true,
+				for: 'create',
+				message: prJson.html_url
+			};
+		} catch (error) {
+			console.error('Error creating PR: ', error);
+			return fail(500, {
 				success: false,
 				for: 'create',
-				message:
-					'Pull Request already exists! If this is your Pull Request, use the "Update Existing" option instead.'
+				message: 'Server error occurred while creating the Pull Request!'
 			});
 		}
-
-		const badges = await fetch(
-			`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}?ref=${BASE_BRANCH}`,
-			{
-				method: 'GET',
-				headers
-			}
-		);
-		const badgesJson = await badges.json();
-		const badgesText = atob(badgesJson.content);
-		const arrayMatch =
-			badgesText.match(/export const homemadeBadges: BadgeInfo\[\] = \[([\s\S]*?)\];/) || '';
-		const arrayText = `[${arrayMatch[1]}]`;
-		const jsonCompatible = arrayText
-			.replace(/^\s*\/\/.*$/gm, '')
-			.replace(/,(\s*[\]}])/g, '$1')
-			.replace(/(\{|,)\s*(\w+)\s*:/g, '$1 "$2":');
-
-		const badgeList = JSON.parse(jsonCompatible);
-
-		const exists = badgeList.some((badge: { fileName: string }) => badge.fileName === SHORT_NAME);
-
-		if (exists) {
-			return fail(400, {
-				success: false,
-				for: 'create',
-				message: 'Badge shorthand name already exists!'
-			});
-		}
-
-		const creator = await fetch(`${CREATOR}?_data=features%2Fuser-page%2Froutes%2Fu.%24identifier`);
-		const creatorJson = await creator.json();
-
-		const lastBracketIndex = badgesText.lastIndexOf('];');
-		const newBadge = {
-			displayName: DISPLAY_NAME,
-			fileName: SHORT_NAME,
-			authorDiscordId: creatorJson.user.discordId
-		};
-		const newBadgeEntry = `\t{\n\t\tdisplayName: "${newBadge.displayName}",\n\t\tfileName: "${newBadge.fileName}",\n\t\tauthorDiscordId: "${newBadge.authorDiscordId}",\n\t},\n`;
-		const updatedBadgesText =
-			badgesText.slice(0, lastBracketIndex) + newBadgeEntry + badgesText.slice(lastBracketIndex);
-
-		// Get all repos and create a fork if it doesnt exist
-		const repos = await fetch(`${BASE_URL}/users/${USERNAME}/repos`, {
-			method: 'GET',
-			headers
-		});
-		const reposJson = await repos.json();
-
-		const hasRepo = reposJson.some((repo: { name: string }) => repo.name === REPO_NAME);
-
-		if (!hasRepo) {
-			await fetch(`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/forks`, {
-				method: 'POST',
-				headers
-			});
-
-			await new Promise((resolve) => setTimeout(resolve, 5000));
-		}
-
-		// Get reference for the source branch
-		const branchRef = await fetch(
-			`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/git/refs/heads/${BASE_BRANCH}`,
-			{
-				method: 'GET',
-				headers
-			}
-		);
-		const branchRefJson = await branchRef.json();
-
-		// Create a new branch in the forked repo from the source branch
-		await fetch(`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/git/refs`, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify({
-				ref: `refs/heads/${SHORT_NAME}`,
-				sha: branchRefJson.object.sha
-			})
-		});
-
-		// Get the forked repos homemade.ts file
-		const forkBadges = await fetch(
-			`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${SHORT_NAME}`,
-			{
-				method: 'GET',
-				headers
-			}
-		);
-		const forkBadgesJson = await forkBadges.json();
-
-		// Update the forked repos homemade.ts file with the new badge
-		await fetch(`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`, {
-			method: 'PUT',
-			headers,
-			body: JSON.stringify({
-				message: `Update homemade.ts file`,
-				branch: SHORT_NAME,
-				content: btoa(updatedBadgesText),
-				sha: forkBadgesJson.sha
-			})
-		});
-
-		// Upload all the image files to the forked repo
-		await uploadFile(
-			`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.gif`,
-			SHORT_NAME,
-			headers,
-			result.output.gif
-		);
-		await uploadFile(
-			`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.png`,
-			SHORT_NAME,
-			headers,
-			result.output.png
-		);
-		await uploadFile(
-			`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.avif`,
-			SHORT_NAME,
-			headers,
-			result.output.avif
-		);
-
-		// Create a pull request from the forked repo to the original repo
-		const pr = await fetch(`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/pulls`, {
-			method: 'POST',
-			headers,
-			body: JSON.stringify({
-				title: `Add badge for ${DISPLAY_NAME}`,
-				head: `${USERNAME}:${SHORT_NAME}`,
-				base: BASE_BRANCH,
-				body: `This PR adds the badge for the tournament ${DISPLAY_NAME}. \n\n**Creator:**\n${CREATOR}${result.output.notes ? `\n\n**Notes:**\n${result.output.notes}` : ''}\n\n###### PR created automatically via Badge Uploader`
-			})
-		});
-		const prJson = await pr.json();
-
-		return {
-			success: true,
-			for: 'create',
-			message: prJson.html_url
-		};
 	},
+
 	updatePR: async ({ request, locals }) => {
-		const formData = await request.formData();
-		const result = v.safeParse(UpdateSchema, Object.fromEntries(formData.entries()));
+		try {
+			const result = await validateUpdateRequest(request);
+			if (!result.success) return result.error;
 
-		if (!result.success) {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Validation failed, did you fill out all required fields correctly?'
-			});
-		}
+			const user = checkUserAuthentication(locals);
+			if (!user.success) return user.error;
 
-		if (result.output.updateType === 'existing' && !result.output.updateName) {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Please provide the name of the badge you want to update!'
-			});
-		}
+			const { shorthandName, displayName, creator, gif, png, avif, updateType, updateName, prUrl } =
+				result.output;
+			const username = locals.user.name;
+			const headers = createGitHubHeaders(locals.user.token);
 
-		if (!locals.user) {
-			return fail(401, {
-				success: false,
-				for: 'update',
-				message: 'You must be logged into GitHub to update a Pull Request!'
-			});
-		}
+			const prJson = await getPullRequestDetails(prUrl, headers);
 
-		const BASE_URL = 'https://api.github.com';
-		const REPO_OWNER = 'hfcRed';
-		const REPO_NAME = 'PR-Testing';
-		const FILE_PATH = 'homemade.ts';
-		const USERNAME = locals.user.name;
-		const SHORT_NAME = result.output.shorthandName;
-		const DISPLAY_NAME = result.output.displayName;
-		const CREATOR = result.output.creator;
-
-		if (
-			result.output.gif.name !== `${SHORT_NAME}.gif` ||
-			result.output.png.name !== `${SHORT_NAME}.png` ||
-			result.output.avif.name !== `${SHORT_NAME}.avif`
-		) {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'File names must match the badge shorthand name!'
-			});
-		}
-
-		const headers = {
-			Authorization: `Bearer ${locals.user.token}`,
-			Accept: 'application/vnd.github.v3+json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'Badge Uploader'
-		};
-
-		// Check if the pull request actually exists
-		const pr = await fetch(
-			`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${result.output.prUrl.split('/').pop()}`,
-			{
-				method: 'GET',
-				headers
+			if (prJson.status === '404') {
+				return fail(400, {
+					success: false,
+					for: 'update',
+					message: 'Pull Request not found!'
+				});
 			}
-		);
-		const prJson = await pr.json();
 
-		if (prJson.status === '404') {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Pull request not found!'
-			});
-		}
+			if (prJson.state !== 'open') {
+				return fail(400, {
+					success: false,
+					for: 'update',
+					message: 'Pull Request is not open!'
+				});
+			}
 
-		if (prJson.state !== 'open') {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Pull request is not open!'
-			});
-		}
+			if (prJson.base.repo.full_name !== `${REPO_OWNER}/${REPO_NAME}`) {
+				return fail(400, {
+					success: false,
+					for: 'update',
+					message: 'Pull Request is not from the correct repository!'
+				});
+			}
 
-		if (prJson.base.repo.full_name !== `${REPO_OWNER}/${REPO_NAME}`) {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Pull request is not from the correct repository!'
-			});
-		}
+			const userJson = await getUserData(headers);
 
-		const userData = await fetch(`${BASE_URL}/user`, {
-			method: 'GET',
-			headers
-		});
-		const userJson = await userData.json();
+			if (prJson.user.login !== userJson.login) {
+				return fail(400, {
+					success: false,
+					for: 'update',
+					message: 'You are not the owner of this Pull Request!'
+				});
+			}
 
-		if (prJson.user.login !== userJson.login) {
-			return fail(400, {
-				success: false,
-				for: 'update',
-				message: 'You are not the owner of this pull request!'
-			});
-		}
+			const branchName = prJson.head.ref;
 
-		const branchName = prJson.head.ref;
-
-		if (result.output.updateType === 'existing') {
-			const badges = await fetch(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
-				{
-					method: 'GET',
-					headers
-				}
-			);
-			const badgesJson = await badges.json();
+			const badgesJson = await fetchBadgesFile(username, branchName, headers);
 			const badgesText = atob(badgesJson.content);
-			const arrayMatch =
-				badgesText.match(/export const homemadeBadges: BadgeInfo\[\] = \[([\s\S]*?)\];/) || '';
-			const arrayText = `[${arrayMatch[1]}]`;
-			const jsonCompatible = arrayText
-				.replace(/^\s*\/\/.*$/gm, '')
-				.replace(/,(\s*[\]}])/g, '$1')
-				.replace(/(\{|,)\s*(\w+)\s*:/g, '$1 "$2":');
+			const badgeList = await parseBadgeList(badgesText);
 
-			const badgeList = JSON.parse(jsonCompatible);
+			const discordId = await fetchCreatorDiscordId(creator);
 
-			const exists = badgeList.some((badge: { fileName: string }) => badge.fileName === SHORT_NAME);
-
-			if (exists) {
-				return fail(400, {
-					success: false,
-					for: 'update',
-					message: 'New badge shorthand name already exists!'
-				});
-			}
-
-			const updateNameExists = badgeList.some(
-				(badge: { fileName: string }) => badge.fileName === result.output.updateName
-			);
-
-			if (!updateNameExists) {
-				return fail(400, {
-					success: false,
-					for: 'update',
-					message: 'Old badge shorthand name does not exist!'
-				});
-			}
-
-			const creator = await fetch(
-				`${CREATOR}?_data=features%2Fuser-page%2Froutes%2Fu.%24identifier`
-			);
-			const creatorJson = await creator.json();
-
-			const regex = new RegExp(
-				`\\s*\\{[^{]*?fileName:\\s*["']${result.output.updateName}["'][^}]*?\\},?\\n?`
-			);
-			const newBadge = {
-				displayName: DISPLAY_NAME,
-				fileName: SHORT_NAME,
-				authorDiscordId: creatorJson.user.discordId
+			const newBadge: BadgeInfo = {
+				displayName: displayName,
+				fileName: shorthandName,
+				authorDiscordId: discordId
 			};
-			const newBadgeEntry = `\n\t{\n\t\tdisplayName: "${newBadge.displayName}",\n\t\tfileName: "${newBadge.fileName}",\n\t\tauthorDiscordId: "${newBadge.authorDiscordId}",\n\t},\n`;
+			const newBadgeEntry = createBadgeEntry(newBadge);
 
-			const matchResult = badgesText.match(regex);
-			if (!matchResult || matchResult.length === 0) {
-				return fail(400, {
-					success: false,
-					for: 'update',
-					message: 'Could not locate the badge entry to update'
-				});
+			let updatedBadgesText;
+
+			if (updateType === 'existing') {
+				if (checkBadgeNameExists(badgeList, shorthandName)) {
+					return fail(400, {
+						success: false,
+						for: 'update',
+						message: 'New badge shorthand name already exists!'
+					});
+				}
+
+				if (!checkBadgeNameExists(badgeList, updateName!)) {
+					return fail(400, {
+						success: false,
+						for: 'update',
+						message: 'Old badge shorthand name does not exist!'
+					});
+				}
+
+				try {
+					updatedBadgesText = replaceBadgeInFile(badgesText, updateName!, newBadgeEntry);
+				} catch (error) {
+					console.error('Error replacing badge entry:', error);
+					return fail(400, {
+						success: false,
+						for: 'update',
+						message: 'Could not locate the badge entry to update!'
+					});
+				}
+
+				await deleteFile(username, `${updateName}.gif`, branchName, headers);
+				await deleteFile(username, `${updateName}.png`, branchName, headers);
+				await deleteFile(username, `${updateName}.avif`, branchName, headers);
+			} else {
+				if (checkBadgeNameExists(badgeList, shorthandName)) {
+					return fail(400, {
+						success: false,
+						for: 'update',
+						message: 'New badge shorthand name already exists!'
+					});
+				}
+
+				updatedBadgesText = addBadgeToFile(badgesText, newBadgeEntry);
 			}
 
-			const updatedBadgesText = badgesText.replace(matchResult[0], newBadgeEntry);
+			await updateBadgesFile(username, branchName, updatedBadgesText, badgesJson.sha, headers);
 
-			// Get the forked repos homemade.ts file
-			const forkBadges = await fetch(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
-				{
-					method: 'GET',
-					headers
-				}
-			);
-			const forkBadgesJson = await forkBadges.json();
-
-			// Update the forked repos homemade.ts file with the new badge
-			await fetch(`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`, {
-				method: 'PUT',
-				headers,
-				body: JSON.stringify({
-					message: `Update homemade.ts file`,
-					branch: branchName,
-					content: btoa(updatedBadgesText),
-					sha: forkBadgesJson.sha
-				})
-			});
-
-			await deleteFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${result.output.updateName}.gif`,
-				branchName,
-				headers
-			);
-			await deleteFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${result.output.updateName}.png`,
-				branchName,
-				headers
-			);
-			await deleteFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${result.output.updateName}.avif`,
-				branchName,
-				headers
-			);
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.gif`,
-				branchName,
-				headers,
-				result.output.gif
-			);
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.png`,
-				branchName,
-				headers,
-				result.output.png
-			);
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.avif`,
-				branchName,
-				headers,
-				result.output.avif
-			);
+			await uploadFile(username, `${shorthandName}.gif`, branchName, headers, gif);
+			await uploadFile(username, `${shorthandName}.png`, branchName, headers, png);
+			await uploadFile(username, `${shorthandName}.avif`, branchName, headers, avif);
 
 			return {
 				success: true,
 				for: 'update',
 				message: prJson.html_url
 			};
-		} else if (result.output.updateType === 'new') {
-			const badges = await fetch(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
-				{
-					method: 'GET',
-					headers
-				}
-			);
-			const badgesJson = await badges.json();
-			const badgesText = atob(badgesJson.content);
-			const arrayMatch =
-				badgesText.match(/export const homemadeBadges: BadgeInfo\[\] = \[([\s\S]*?)\];/) || '';
-			const arrayText = `[${arrayMatch[1]}]`;
-			const jsonCompatible = arrayText
-				.replace(/^\s*\/\/.*$/gm, '')
-				.replace(/,(\s*[\]}])/g, '$1')
-				.replace(/(\{|,)\s*(\w+)\s*:/g, '$1 "$2":');
-
-			const badgeList = JSON.parse(jsonCompatible);
-
-			const exists = badgeList.some((badge: { fileName: string }) => badge.fileName === SHORT_NAME);
-
-			if (exists) {
-				return fail(400, {
-					success: false,
-					for: 'update',
-					message: 'New badge shorthand name already exists!'
-				});
-			}
-
-			const creator = await fetch(
-				`${CREATOR}?_data=features%2Fuser-page%2Froutes%2Fu.%24identifier`
-			);
-			const creatorJson = await creator.json();
-
-			const newBadge = {
-				displayName: DISPLAY_NAME,
-				fileName: SHORT_NAME,
-				authorDiscordId: creatorJson.user.discordId
-			};
-			const newBadgeEntry = `\t{\n\t\tdisplayName: "${newBadge.displayName}",\n\t\tfileName: "${newBadge.fileName}",\n\t\tauthorDiscordId: "${newBadge.authorDiscordId}",\n\t},\n`;
-			const lastBracketIndex = badgesText.lastIndexOf('];');
-			const updatedBadgesText =
-				badgesText.slice(0, lastBracketIndex) + newBadgeEntry + badgesText.slice(lastBracketIndex);
-
-			// Get the forked repos homemade.ts file
-			const forkBadges = await fetch(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}?ref=${branchName}`,
-				{
-					method: 'GET',
-					headers
-				}
-			);
-			const forkBadgesJson = await forkBadges.json();
-
-			// Update the forked repos homemade.ts file with the new badge
-			await fetch(`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${FILE_PATH}`, {
-				method: 'PUT',
-				headers,
-				body: JSON.stringify({
-					message: `Update homemade.ts file`,
-					branch: branchName,
-					content: btoa(updatedBadgesText),
-					sha: forkBadgesJson.sha
-				})
-			});
-
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.gif`,
-				branchName,
-				headers,
-				result.output.gif
-			);
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.png`,
-				branchName,
-				headers,
-				result.output.png
-			);
-			await uploadFile(
-				`${BASE_URL}/repos/${USERNAME}/${REPO_NAME}/contents/${SHORT_NAME}.avif`,
-				branchName,
-				headers,
-				result.output.avif
-			);
-
-			return {
-				success: true,
+		} catch (error) {
+			console.error('Error updating PR: ', error);
+			return fail(500, {
+				success: false,
 				for: 'update',
-				message: prJson.html_url
-			};
+				message: 'Server error occurred while updating the Pull Request!'
+			});
 		}
 	}
 } satisfies Actions;
-
-async function fileToBase64(file: File) {
-	const arrayBuffer = await file.arrayBuffer();
-	const bytes = new Uint8Array(arrayBuffer);
-	const binary = bytes.reduce((acc, byte) => acc + String.fromCharCode(byte), '');
-	return btoa(binary);
-}
-
-async function uploadFile(fullPath: string, branch: string, headers: HeadersInit, file: File) {
-	const base64Content = await fileToBase64(file);
-
-	const fileCheck = await fetch(`${fullPath}?ref=${branch}`, {
-		method: 'GET',
-		headers
-	});
-	const fileCheckJson = await fileCheck.json();
-
-	return fetch(fullPath, {
-		method: 'PUT',
-		headers,
-		body: JSON.stringify({
-			message: `Add file ${file.name}`,
-			branch,
-			content: base64Content,
-			sha: fileCheckJson?.sha || undefined
-		})
-	});
-}
-
-async function deleteFile(fullPath: string, branch: string, headers: HeadersInit) {
-	const fileCheck = await fetch(`${fullPath}?ref=${branch}`, {
-		method: 'GET',
-		headers
-	});
-	const fileCheckJson = await fileCheck.json();
-
-	return fetch(fullPath, {
-		method: 'DELETE',
-		headers,
-		body: JSON.stringify({
-			message: `Delete file ${fullPath.split('/').pop()}`,
-			branch,
-			sha: fileCheckJson?.sha || undefined
-		})
-	});
-}

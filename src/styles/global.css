@@ -61,3 +61,128 @@ embed,
 object {
 	display: block;
 }
+
+hgroup {
+	margin-block: 1rem;
+}
+
+fieldset legend {
+	color: var(--pico-h3-color);
+	margin-bottom: 1rem;
+	font-size: 1.5rem;
+	font-weight: 700;
+	line-height: 1.175;
+}
+
+.form-margin {
+	margin-bottom: var(--pico-spacing);
+}
+
+.btn-reset {
+	--pico-color: var(--pico-color);
+	color: var(--pico-color);
+	background-color: transparent;
+	outline: none;
+	border: none;
+	border-radius: 0;
+	margin: 0;
+	padding: 0;
+	box-shadow: none;
+	transition: none;
+}
+
+.grid-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 2rem;
+	padding: 1rem;
+
+	@media (max-width: 768px) {
+		grid-template-columns: 1fr;
+		padding: 0;
+	}
+}
+
+.flex-container {
+	display: flex;
+	flex-direction: column;
+	padding: 1rem;
+
+	@media (max-width: 768px) {
+		gap: 1rem;
+		padding: 0;
+	}
+}
+
+.tablist-container {
+	scrollbar-color: rgba(136, 145, 164, 0.25) transparent;
+	scrollbar-width: thin;
+	scrollbar-gutter: stable;
+	margin-bottom: 1rem;
+	padding-bottom: 0.5rem;
+	overflow-x: auto;
+	overflow-y: hidden;
+
+	&::-webkit-scrollbar,
+	&::-webkit-scrollbar-track {
+		background-color: transparent;
+		width: 5px;
+		height: 5px;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background-color: rgba(136, 145, 164, 0.25);
+		border-radius: 5px;
+	}
+}
+
+.tablist {
+	border-bottom: 3px solid var(--pico-form-element-border-color);
+	display: flex;
+	min-width: fit-content;
+}
+
+.tab {
+	min-width: fit-content;
+	margin-bottom: -3px;
+
+	& button {
+		border-bottom: 3px solid transparent;
+		padding: 0 0.5rem 0.5rem 0.5rem;
+
+		&[aria-selected='true'] {
+			color: var(--pico-h2-color);
+			border-bottom: 3px solid var(--pico-primary);
+			font-weight: 600;
+		}
+	}
+}
+
+.alert {
+	border-radius: var(--pico-border-radius);
+	border: 1px solid rgb(189, 66, 109);
+	background-color: rgb(51, 21, 32);
+	padding: 1rem;
+
+	& p {
+		color: rgb(249, 195, 214);
+		margin: 0;
+	}
+}
+
+.success {
+	border-radius: var(--pico-border-radius);
+	border: 1px solid rgb(66, 189, 66);
+	background-color: rgb(32, 51, 21);
+	padding: 1rem;
+
+	& p {
+		color: rgb(195, 249, 195);
+		margin: 0;
+	}
+}
+
+.required {
+	color: var(--pico-del-color);
+	font-weight: 700;
+}
