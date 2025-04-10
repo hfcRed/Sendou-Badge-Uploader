@@ -6,6 +6,8 @@
 
 Website for generating and uploading tournament badges for [Sendou.ink](https://sendou.ink)
 
+![chrome_HHcOaFnsBp](https://github.com/user-attachments/assets/8dbc4068-256f-434a-b0c0-70ca710cd0d4)
+
 </div>
 
 ---
