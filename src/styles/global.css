@@ -79,7 +79,7 @@ fieldset legend {
 }
 
 .btn-reset {
-	--pico-color: var(--pico-color);
+	--pico-color: var(--pico-color) !important;
 	color: var(--pico-color);
 	background-color: transparent;
 	outline: none;
@@ -168,6 +168,15 @@ fieldset legend {
 		color: rgb(249, 195, 214);
 		margin: 0;
 	}
+
+	@media (prefers-color-scheme: light) {
+		background-color: rgb(255, 235, 235);
+		border: 1px solid rgb(255, 0, 0);
+
+		& p {
+			color: rgb(255, 0, 0);
+		}
+	}
 }
 
 .success {
@@ -179,6 +188,15 @@ fieldset legend {
 	& p {
 		color: rgb(195, 249, 195);
 		margin: 0;
+	}
+
+	@media (prefers-color-scheme: light) {
+		background-color: rgb(235, 255, 235);
+		border: 1px solid rgb(0, 219, 0);
+
+		& p {
+			color: rgb(0, 173, 0);
+		}
 	}
 }
 
