@@ -20,7 +20,10 @@
 		[canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
 		const ctx = canvas.getContext('2d')!;
 
-		const gif = new SuperGif(img, { autoplay: false });
+		const gif = new SuperGif(img, {
+			autoplay: false,
+			maxWidth: 511.999999999999
+		});
 		await new Promise((resolve) => gif.load(resolve));
 
 		const frames = gif.getLength();
