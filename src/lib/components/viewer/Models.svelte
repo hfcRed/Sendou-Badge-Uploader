@@ -166,6 +166,7 @@
 		& .model-preview {
 			display: flex;
 			flex-direction: column;
+			align-items: stretch;
 			aspect-ratio: 1 / 1;
 			margin-bottom: 0.5rem;
 			padding: 0.25rem;
