@@ -114,9 +114,14 @@ export class Viewer {
 	}
 
 	private drawLoop(delta: number) {
-		if (this.viewport.turntable)
-			this.viewport.cameraRotation =
-				(this.viewport.cameraRotation + delta * this.viewport.turntableSpeed) % (Math.PI * 2);
+		if (this.viewport.turntable) {
+			if (this.gif.recording) {
+				this.viewport.cameraRotation += delta * this.viewport.turntableSpeed;
+			} else {
+				this.viewport.cameraRotation =
+					(this.viewport.cameraRotation + delta * this.viewport.turntableSpeed) % (Math.PI * 2);
+			}
+		}
 
 		this.pico.setTurntableCamera(
 			this.viewport.cameraDistance,
