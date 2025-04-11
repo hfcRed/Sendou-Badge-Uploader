@@ -59,7 +59,7 @@ export class Viewer {
 		progress: 0,
 		generated: []
 	});
-	selectedImage = $derived(this.images.generated.find((image) => image.selected));
+	readonly selectedImage = $derived(this.images.generated.find((image) => image.selected));
 
 	private textureCanvas = $state<CanvasRenderingContext2D>()!;
 	private lightmapCanvas = $state<CanvasRenderingContext2D>()!;
