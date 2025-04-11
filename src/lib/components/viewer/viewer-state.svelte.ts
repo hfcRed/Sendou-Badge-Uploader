@@ -24,8 +24,8 @@ interface Images {
 
 export class Viewer {
 	viewport = $state({
-		cameraDistance: 30,
-		cameraHeight: 0,
+		cameraDistance: 7,
+		cameraHeight: 1,
 		cameraTilt: 0.1,
 		cameraRotation: 0,
 		turntable: true,
@@ -67,6 +67,8 @@ export class Viewer {
 	private worker!: Worker;
 	workerLoaded = $state(false);
 
+	private eventHandlers: Record<string, EventListenerOrEventListenerObject> | null = null;
+
 	pico!: PicoCADViewer;
 
 	init(
@@ -101,51 +103,20 @@ export class Viewer {
 		this.pico.startDrawLoop(this.drawLoop.bind(this));
 
 		this.setupWorker();
-		this.setupEvents();
+		this.addEventListeners();
 	}
 
 	async loadModel(source: PicoCADSource) {
-		const model = await this.pico.load(source);
-		this.viewport.cameraDistance = model.zoomLevel!;
-
-		const center = this.getModelCenter();
-		this.viewport.cameraHeight = center.y;
+		await this.pico.load(source);
 
 		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
 		this.pico.removeHDTexture();
 	}
 
-	private getModelCenter() {
-		const objects = this.pico.model.objects;
-		const min = [Infinity, Infinity, Infinity];
-		const max = [-Infinity, -Infinity, -Infinity];
-
-		for (const object of objects) {
-			for (const vertex of object.vertices) {
-				for (let i = 0; i < 3; i++) {
-					const value = vertex[i] + object.position[i];
-					min[i] = Math.min(min[i], value);
-					max[i] = Math.max(max[i], value);
-				}
-			}
-		}
-
-		const centerX = (min[0] + max[0]) / 2;
-		const centerY = -((min[1] + max[1]) / 2);
-		const centerZ = (min[2] + max[2]) / 2;
-
-		this.viewport.isCentered = Math.abs(centerX) <= 0.2 && Math.abs(centerZ) <= 0.2;
-
-		return {
-			x: 0,
-			y: centerY,
-			z: 0
-		};
-	}
-
 	private drawLoop(delta: number) {
 		if (this.viewport.turntable)
-			this.viewport.cameraRotation += delta * this.viewport.turntableSpeed;
+			this.viewport.cameraRotation =
+				(this.viewport.cameraRotation + delta * this.viewport.turntableSpeed) % (Math.PI * 2);
 
 		this.pico.setTurntableCamera(
 			this.viewport.cameraDistance,
@@ -237,29 +208,6 @@ export class Viewer {
 		};
 	}
 
-	private setupEvents() {
-		window.addEventListener('dragenter', (e) => e.preventDefault());
-		window.addEventListener('dragleave', (e) => e.preventDefault());
-		window.addEventListener('dragover', (e) => e.preventDefault());
-		window.addEventListener('drop', (e: DragEvent) => {
-			e.preventDefault();
-
-			const file = e.dataTransfer?.files[0];
-			if (file) this.handleFile(file);
-
-			const text = e.dataTransfer?.getData('text/plain');
-			if (text && !file) this.loadModel(text);
-		});
-
-		window.addEventListener('paste', (e: ClipboardEvent) => {
-			const file = e.clipboardData?.files[0];
-			if (file) this.handleFile(file);
-
-			const text = e.clipboardData?.getData('text/plain');
-			if (text) this.loadModel(text);
-		});
-	}
-
 	private handleFile(file: File) {
 		const extension = file.name.split('.').pop()?.toLowerCase();
 
@@ -299,6 +247,103 @@ export class Viewer {
 
 		URL.revokeObjectURL(url);
 		canvas.remove();
+	}
+
+	private addEventListeners() {
+		this.removeEventListeners();
+
+		this.eventHandlers = {
+			dragenter: (e: Event) => e.preventDefault(),
+			dragleave: (e: Event) => e.preventDefault(),
+			dragover: (e: Event) => e.preventDefault(),
+
+			drop: ((e: DragEvent) => {
+				e.preventDefault();
+
+				const file = e.dataTransfer?.files[0];
+				if (file) this.handleFile(file);
+
+				const text = e.dataTransfer?.getData('text/plain');
+				if (text && !file) this.loadModel(text);
+			}) as EventListener,
+
+			paste: ((e: ClipboardEvent) => {
+				const file = e.clipboardData?.files[0];
+				if (file) this.handleFile(file);
+
+				const text = e.clipboardData?.getData('text/plain');
+				if (text) this.loadModel(text);
+			}) as EventListener,
+
+			keydown: ((e: KeyboardEvent) => {
+				if (e.ctrlKey || e.metaKey) return;
+				if (e.target !== document.body) return;
+				e.preventDefault();
+
+				this.handleKeyboardInput(e.key.toLowerCase());
+			}) as EventListener
+		};
+
+		window.addEventListener('dragenter', this.eventHandlers.dragenter as EventListener);
+		window.addEventListener('dragleave', this.eventHandlers.dragleave as EventListener);
+		window.addEventListener('dragover', this.eventHandlers.dragover as EventListener);
+		window.addEventListener('drop', this.eventHandlers.drop as EventListener);
+		window.addEventListener('paste', this.eventHandlers.paste as EventListener);
+		window.addEventListener('keydown', this.eventHandlers.keydown as EventListener);
+	}
+
+	private handleKeyboardInput(key: string) {
+		if (key === 'arrowleft' || key === 'a') {
+			this.viewport.turntable = false;
+			this.viewport.cameraRotation = (this.viewport.cameraRotation - 0.05) % (Math.PI * 2);
+			if (this.viewport.cameraRotation < 0) this.viewport.cameraRotation += Math.PI * 2;
+		}
+		if (key === 'arrowright' || key === 'd') {
+			this.viewport.turntable = false;
+			this.viewport.cameraRotation = (this.viewport.cameraRotation + 0.05) % (Math.PI * 2);
+		}
+
+		if (key === 'arrowup' || key === 'w') {
+			this.viewport.cameraTilt = Math.min(this.viewport.cameraTilt + 0.025, 1);
+		}
+		if (key === 'arrowdown' || key === 's') {
+			this.viewport.cameraTilt = Math.max(this.viewport.cameraTilt - 0.025, -1);
+		}
+
+		if (key === 'home' || key === 'e') {
+			this.viewport.cameraDistance = Math.max(this.viewport.cameraDistance - 0.5, 0);
+		}
+		if (key === 'end' || key === 'q') {
+			this.viewport.cameraDistance = Math.min(this.viewport.cameraDistance + 0.5, 100);
+		}
+
+		if (key === 'y' || key === 'z' || key === 'pageup') {
+			this.viewport.cameraHeight = Math.min(this.viewport.cameraHeight + 0.05, 10);
+		}
+		if (key === 'x' || key === 'pagedown') {
+			this.viewport.cameraHeight = Math.max(this.viewport.cameraHeight - 0.05, -10);
+		}
+
+		if (key === 't' || key === ' ') {
+			this.viewport.turntable = !this.viewport.turntable;
+		}
+		if (key === 'r') {
+			this.viewport.rulers = !this.viewport.rulers;
+		}
+		if (key === 'o') {
+			this.viewport.rotationOverlay = !this.viewport.rotationOverlay;
+		}
+	}
+
+	private removeEventListeners() {
+		if (!this.eventHandlers) return;
+
+		window.removeEventListener('dragenter', this.eventHandlers.dragenter as EventListener);
+		window.removeEventListener('dragleave', this.eventHandlers.dragleave as EventListener);
+		window.removeEventListener('dragover', this.eventHandlers.dragover as EventListener);
+		window.removeEventListener('drop', this.eventHandlers.drop as EventListener);
+		window.removeEventListener('paste', this.eventHandlers.paste as EventListener);
+		window.removeEventListener('keydown', this.eventHandlers.keydown as EventListener);
 	}
 }
 
