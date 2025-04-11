@@ -33,7 +33,6 @@
 	</div>
 </footer>
 
-<!-- Need to order these -->
 <style>
 	header {
 		border-bottom: 1px solid var(--pico-form-element-border-color);
