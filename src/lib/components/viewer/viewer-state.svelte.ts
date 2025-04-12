@@ -322,10 +322,10 @@ export class Viewer {
 			this.viewport.cameraDistance = Math.min(this.viewport.cameraDistance + 0.5, 100);
 		}
 
-		if (key === 'y' || key === 'z' || key === 'pageup') {
+		if (key === 'y' || key === 'z' || key === 'pagedown') {
 			this.viewport.cameraHeight = Math.min(this.viewport.cameraHeight + 0.05, 10);
 		}
-		if (key === 'x' || key === 'pagedown') {
+		if (key === 'x' || key === 'pageup') {
 			this.viewport.cameraHeight = Math.max(this.viewport.cameraHeight - 0.05, -10);
 		}
 
