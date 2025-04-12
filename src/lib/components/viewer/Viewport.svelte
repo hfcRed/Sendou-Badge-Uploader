@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { viewer } from './viewer-state.svelte';
+	import NumericControl from '../NumericControl.svelte';
 
 	function getModelCenter() {
 		const objects = viewer.pico.model.objects;
@@ -32,37 +33,46 @@
 
 <fieldset>
 	<legend>Camera</legend>
-	<label>
-		Distance
-		<input type="range" min="0" max="100" step="0.01" bind:value={viewer.viewport.cameraDistance} />
-	</label>
-	<label>
-		Height
-		<input type="range" min="-10" max="10" step="0.01" bind:value={viewer.viewport.cameraHeight} />
-	</label>
-	<label>
-		Tilt
-		<input type="range" min="-1" max="1" step="0.01" bind:value={viewer.viewport.cameraTilt} />
-	</label>
-	<label>
-		Rotation
-		<input
-			type="range"
-			min="0"
-			max="6.283185307179586"
-			step="0.01"
-			bind:value={viewer.viewport.cameraRotation}
-			oninput={(e) => (viewer.viewport.turntable = false)}
-		/>
-	</label>
+	<NumericControl
+		label="Distance"
+		min={0}
+		max={100}
+		step={0.01}
+		bind:value={viewer.viewport.cameraDistance}
+	/>
+	<NumericControl
+		label="Height"
+		min={-10}
+		max={10}
+		step={0.01}
+		bind:value={viewer.viewport.cameraHeight}
+	/>
+	<NumericControl
+		label="Tilt"
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.viewport.cameraTilt}
+	/>
+	<NumericControl
+		label="Rotation"
+		min={0}
+		max={Math.PI * 2}
+		step={0.01}
+		bind:value={viewer.viewport.cameraRotation}
+		oninput={() => (viewer.viewport.turntable = false)}
+	/>
 	<label class="form-margin">
 		<input type="checkbox" role="switch" bind:checked={viewer.viewport.turntable} />
 		Turntable
 	</label>
-	<label>
-		Turntable Speed
-		<input type="range" min="0" max="3" step="0.01" bind:value={viewer.viewport.turntableSpeed} />
-	</label>
+	<NumericControl
+		label="Turntable Speed"
+		min={0}
+		max={3}
+		step={0.01}
+		bind:value={viewer.viewport.turntableSpeed}
+	/>
 </fieldset>
 <hr />
 <fieldset>
