@@ -42,7 +42,7 @@
 			--pico-color: var(--pico-color);
 			padding: var(--pico-form-element-spacing-vertical) 0.5rem;
 			font-family: var(--pico-font-family-monospace);
-			font-size: 0.875rem;
+			font-size: 0.8rem;
 			appearance: none;
 			-moz-appearance: textfield;
 		}
