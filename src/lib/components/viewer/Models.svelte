@@ -167,7 +167,6 @@
 			display: flex;
 			flex-direction: column;
 			align-items: stretch;
-			aspect-ratio: 1 / 1;
 			margin-bottom: 0.5rem;
 			padding: 0.25rem;
 
@@ -179,7 +178,7 @@
 				background-color: var(--pico-form-element-background-color);
 				border-radius: var(--pico-border-radius);
 				margin: 0;
-				padding: 0 0.25rem;
+				padding: 0.1rem 0.25rem;
 				text-overflow: ellipsis;
 				text-wrap: nowrap;
 				overflow: hidden;
