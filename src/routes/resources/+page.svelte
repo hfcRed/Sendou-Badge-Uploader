@@ -101,10 +101,6 @@
 </ul>
 
 <style>
-	hgroup {
-		margin-block: 1rem;
-	}
-
 	h2 {
 		margin-top: 0;
 	}
