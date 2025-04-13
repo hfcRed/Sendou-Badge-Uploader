@@ -126,8 +126,12 @@ export class Viewer {
 			if (this.gif.recording) {
 				this.viewport.cameraRotation += delta * this.viewport.turntableSpeed;
 			} else {
-				this.viewport.cameraRotation =
-					(this.viewport.cameraRotation + delta * this.viewport.turntableSpeed) % (Math.PI * 2);
+				this.viewport.cameraRotation = parseFloat(
+					(
+						(this.viewport.cameraRotation + delta * this.viewport.turntableSpeed) %
+						(Math.PI * 2)
+					).toFixed(3)
+				);
 			}
 		}
 
