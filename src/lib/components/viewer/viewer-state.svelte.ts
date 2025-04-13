@@ -43,7 +43,10 @@ export class Viewer {
 		outlineColor: '#ffffff',
 		wireframe: false,
 		wireframeXray: true,
-		wireframeColor: '#ffffff'
+		wireframeColor: '#ffffff',
+		usingHDTexture: false,
+		hdShadingSteps: 3,
+		hdShadingColor: '#ffffff'
 	});
 
 	gif = $state<Gif>({
@@ -109,8 +112,9 @@ export class Viewer {
 	async loadModel(source: PicoCADSource) {
 		await this.pico.load(source);
 
-		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
+		this.shader.usingHDTexture = false;
 		this.pico.removeHDTexture();
+		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
 	}
 
 	private drawLoop(delta: number) {
@@ -246,6 +250,7 @@ export class Viewer {
 			this.pico.setIndexTexture(data);
 			this.textureCanvas.putImageData(data, 0, 0);
 		} else {
+			this.shader.usingHDTexture = true;
 			this.pico.setHDTexture(data);
 			this.textureCanvas.putImageData(data, 0, 0);
 		}

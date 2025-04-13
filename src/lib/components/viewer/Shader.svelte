@@ -18,7 +18,7 @@
 			<option>None</option>
 		</select>
 	</label>
-	<label>
+	<label class="form-margin">
 		<input
 			type="checkbox"
 			role="switch"
@@ -26,6 +26,27 @@
 			onchange={() => (viewer.pico.shading = viewer.shader.shading)}
 		/>
 		Shading
+	</label>
+	<label>
+		HD Shading Steps
+		<input
+			type="range"
+			min="0"
+			max="25"
+			step="1"
+			bind:value={viewer.shader.hdShadingSteps}
+			oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
+			disabled={!viewer.shader.usingHDTexture}
+		/>
+	</label>
+	<label>
+		HD Shading Color
+		<input
+			type="color"
+			bind:value={viewer.shader.hdShadingColor}
+			oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
+			disabled={!viewer.shader.usingHDTexture}
+		/>
 	</label>
 </fieldset>
 <hr />
@@ -86,3 +107,9 @@
 		/>
 	</label>
 </fieldset>
+
+<style>
+	.form-margin {
+		margin-bottom: 1.25rem;
+	}
+</style>
