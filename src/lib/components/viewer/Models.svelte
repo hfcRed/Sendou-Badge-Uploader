@@ -27,11 +27,11 @@
 			...viewer.viewport,
 			...viewer.shader,
 			model: urlCompressModel(viewer.pico.model),
-			name: viewer.pico.model.name,
+			name: viewer.modelName,
 			image: base64
 		});
 
-		localStorage.setItem(viewer.pico.model.name || '', json);
+		localStorage.setItem(viewer.modelName, json);
 		canvas.remove();
 
 		loadModelPreviews();
@@ -51,10 +51,11 @@
 
 		viewer.shader = {
 			...viewer.shader,
-			...Object.fromEntries(Object.entries(data).filter(([key]) => key in viewer.shader))
+			...Object.fromEntries(Object.entries(data).filter(([key]) => key in viewer.shader)),
+			usingHDTexture: false
 		};
 
-		viewer.pico.setWatermark(data.watermark);
+		viewer.modelName = data.name;
 
 		viewer.pico.renderMode = data.renderMode.toLowerCase();
 		viewer.pico.shading = data.shading;
@@ -63,6 +64,7 @@
 		viewer.pico.drawWireframe = data.wireframe;
 		viewer.pico.wireframeXray = data.wireframeXray;
 		viewer.pico.wireframeColor = hexToRGB(data.wireframeColor);
+		viewer.pico.setWatermark(data.watermark);
 	}
 
 	function deleteFromStorage() {
@@ -107,6 +109,17 @@
 </script>
 
 <div class="images-container">
+	<label>
+		Name
+		<input
+			type="text"
+			autocomplete="off"
+			autocorrect="off"
+			bind:value={viewer.modelName}
+			onchange={(e) =>
+				(viewer.modelName = e.currentTarget.value.length ? e.currentTarget.value : 'untitled')}
+		/>
+	</label>
 	<fieldset class="grid">
 		<button onclick={() => saveToStorage()}>Save</button>
 		<button onclick={() => loadFromStorage()} disabled={!savedSelected}>Load</button>
@@ -130,6 +143,10 @@
 </div>
 
 <style>
+	label {
+		margin-bottom: -1rem;
+	}
+
 	.images-container {
 		display: flex;
 		flex-direction: column;

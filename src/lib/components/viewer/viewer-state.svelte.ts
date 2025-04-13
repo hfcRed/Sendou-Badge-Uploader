@@ -64,6 +64,8 @@ export class Viewer {
 	});
 	readonly selectedImage = $derived(this.images.generated.find((image) => image.selected));
 
+	modelName = $state('');
+
 	private textureCanvas = $state<CanvasRenderingContext2D>()!;
 	private lightmapCanvas = $state<CanvasRenderingContext2D>()!;
 
@@ -111,6 +113,8 @@ export class Viewer {
 
 	async loadModel(source: PicoCADSource) {
 		await this.pico.load(source);
+
+		this.modelName = this.pico.model.name || 'untitled';
 
 		this.shader.usingHDTexture = false;
 		this.pico.removeHDTexture();
