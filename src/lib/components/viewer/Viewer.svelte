@@ -80,10 +80,24 @@
 			</Tabs.Content>
 			<Tabs.Content value="textures">
 				<h3>Main Texture</h3>
+				<p>
+					<small>Is HD texture: {viewer.shader.usingHDTexture}</small>
+				</p>
 				<canvas class="texture" width="128" height="120" bind:this={textureCanvas}></canvas>
 				<h3>Normal Map</h3>
+				<p>
+					<small
+						>Recommended size at least 1024 x 960 px. Higher resolution means smoother shading. Only
+						applies to HD textures</small
+					>
+				</p>
 				<canvas class="texture" width="128" height="120" bind:this={normalMapCanvas}></canvas>
 				<h3>Lightmap</h3>
+				<p>
+					<small
+						>Determines how colors are shaded. Has to be 32 x 7px. Does not apply to HD textures</small
+					>
+				</p>
 				<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
 			</Tabs.Content>
 			<Tabs.Content value="models">
