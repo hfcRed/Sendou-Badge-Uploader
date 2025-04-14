@@ -30,17 +30,14 @@
 	</label>
 	<fieldset disabled={!viewer.shader.usingHDTexture}>
 		<legend><h4>HD Texture</h4></legend>
-		<label>
-			Shading Steps
-			<input
-				type="range"
-				min="0"
-				max="25"
-				step="1"
-				bind:value={viewer.shader.hdShadingSteps}
-				oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
-			/>
-		</label>
+		<NumericControl
+			label={'Shading Steps'}
+			min={0}
+			max={25}
+			step={1}
+			bind:value={viewer.shader.hdShadingSteps}
+			oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
+		/>
 		<label>
 			Shading Color
 			<input
@@ -62,17 +59,14 @@
 <hr />
 <fieldset>
 	<legend><h3>Outline</h3></legend>
-	<label>
-		Outline Width
-		<input
-			type="range"
-			min="0"
-			max="25"
-			step="1"
-			bind:value={viewer.shader.outlineWidth}
-			oninput={(e) => (viewer.pico.outlineSize = parseFloat(e.currentTarget.value))}
-		/>
-	</label>
+	<NumericControl
+		label={'Outline Width'}
+		min={0}
+		max={25}
+		step={1}
+		bind:value={viewer.shader.outlineWidth}
+		oninput={(e) => (viewer.pico.outlineSize = parseFloat(e.currentTarget.value))}
+	/>
 	<label>
 		Outline Color
 		<input
