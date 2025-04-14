@@ -1,7 +1,7 @@
 import example from '$lib/picocad/files/example-model.txt?raw';
 import defaultLightmap from '$lib/picocad/files/default-lightmap.png';
-import { PicoCADViewer, type PicoCADSource } from '$lib/picocad';
-import { isPico8Texture } from '$lib/utilities';
+import { PicoCADViewer, type PicoCADRenderMode, type PicoCADSource } from '$lib/picocad';
+import { isPico8Texture, hexToRGB } from '$lib/utilities';
 
 interface Gif {
 	url: string | null;
@@ -20,6 +20,30 @@ interface Images {
 	generating: boolean;
 	progress: number;
 	generated: GeneratedImage[];
+}
+
+interface ViewerSettings {
+	name: string;
+	cameraDistance: number;
+	cameraHeight: number;
+	cameraTilt: number;
+	cameraRotation: number;
+	turntable: boolean;
+	turntableSpeed: number;
+	rulers: boolean;
+	rotationOverlay: boolean;
+	watermark: string;
+	isCentered: boolean;
+	renderMode: string;
+	shading: boolean;
+	outlineWidth: number;
+	outlineColor: string;
+	wireframe: boolean;
+	wireframeXray: boolean;
+	wireframeColor: string;
+	usingHDTexture: boolean;
+	hdShadingSteps: number;
+	hdShadingColor: string;
 }
 
 export class Viewer {
@@ -46,7 +70,7 @@ export class Viewer {
 		wireframeColor: '#ffffff',
 		usingHDTexture: false,
 		hdShadingSteps: 3,
-		hdShadingColor: '#ffffff'
+		hdShadingColor: '#000000'
 	});
 
 	gif = $state<Gif>({
@@ -76,7 +100,7 @@ export class Viewer {
 
 	pico!: PicoCADViewer;
 
-	init(
+	async init(
 		viewportCanvas: HTMLCanvasElement,
 		textureCanvas: HTMLCanvasElement,
 		lightmapCanvas: HTMLCanvasElement
@@ -97,9 +121,13 @@ export class Viewer {
 			},
 			fov: 30
 		});
-		this.pico.backgroundColor = [0, 0, 0, 1];
-		this.pico.outlineColor = [1, 1, 1, 1];
-		this.loadModel(example);
+		await this.loadModel(example);
+
+		this.loadSettings({
+			...this.viewport,
+			...this.shader,
+			name: this.pico.model.name || 'untitled'
+		});
 
 		const img = new Image();
 		img.src = defaultLightmap;
@@ -119,6 +147,33 @@ export class Viewer {
 		this.shader.usingHDTexture = false;
 		this.pico.removeHDTexture();
 		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
+	}
+
+	loadSettings(data: ViewerSettings) {
+		this.modelName = data.name;
+
+		this.viewport = {
+			...this.viewport,
+			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.viewport))
+		};
+
+		this.shader = {
+			...this.shader,
+			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.shader)),
+			usingHDTexture: false
+		};
+
+		this.pico.setWatermark(data.watermark);
+		this.pico.backgroundColor = [0, 0, 0, 1];
+		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
+		this.pico.shading = data.shading;
+		this.pico.outlineSize = data.outlineWidth;
+		this.pico.outlineColor = hexToRGB(data.outlineColor);
+		this.pico.drawWireframe = data.wireframe;
+		this.pico.wireframeXray = data.wireframeXray;
+		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
+		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
+		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
 	}
 
 	private drawLoop(delta: number) {
@@ -254,6 +309,7 @@ export class Viewer {
 		}
 
 		if (isPico8) {
+			this.shader.usingHDTexture = false;
 			this.pico.removeHDTexture();
 			this.pico.setIndexTexture(data);
 			this.textureCanvas.putImageData(data, 0, 0);

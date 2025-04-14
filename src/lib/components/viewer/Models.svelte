@@ -44,27 +44,7 @@
 		const data = JSON.parse(model);
 		await viewer.loadModel(urlDecompressModel(data.model));
 
-		viewer.viewport = {
-			...viewer.viewport,
-			...Object.fromEntries(Object.entries(data).filter(([key]) => key in viewer.viewport))
-		};
-
-		viewer.shader = {
-			...viewer.shader,
-			...Object.fromEntries(Object.entries(data).filter(([key]) => key in viewer.shader)),
-			usingHDTexture: false
-		};
-
-		viewer.modelName = data.name;
-
-		viewer.pico.renderMode = data.renderMode.toLowerCase();
-		viewer.pico.shading = data.shading;
-		viewer.pico.outlineSize = data.outlineWidth;
-		viewer.pico.outlineColor = hexToRGB(data.outlineColor);
-		viewer.pico.drawWireframe = data.wireframe;
-		viewer.pico.wireframeXray = data.wireframeXray;
-		viewer.pico.wireframeColor = hexToRGB(data.wireframeColor);
-		viewer.pico.setWatermark(data.watermark);
+		viewer.loadSettings({ ...data, name: data.name });
 	}
 
 	function deleteFromStorage() {
