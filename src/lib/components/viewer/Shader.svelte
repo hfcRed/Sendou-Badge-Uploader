@@ -28,36 +28,36 @@
 		/>
 		Shading
 	</label>
-	<h4>HD Texture</h4>
-	<label>
-		Shading Steps
-		<input
-			type="range"
-			min="0"
-			max="25"
-			step="1"
-			bind:value={viewer.shader.hdShadingSteps}
-			oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
-			disabled={!viewer.shader.usingHDTexture}
+	<fieldset disabled={!viewer.shader.usingHDTexture}>
+		<legend><h4>HD Texture</h4></legend>
+		<label>
+			Shading Steps
+			<input
+				type="range"
+				min="0"
+				max="25"
+				step="1"
+				bind:value={viewer.shader.hdShadingSteps}
+				oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
+			/>
+		</label>
+		<label>
+			Shading Color
+			<input
+				type="color"
+				bind:value={viewer.shader.hdShadingColor}
+				oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+		<NumericControl
+			label={'Normal Map Strength'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.normalStrength}
+			oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
 		/>
-	</label>
-	<label>
-		Shading Color
-		<input
-			type="color"
-			bind:value={viewer.shader.hdShadingColor}
-			oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
-			disabled={!viewer.shader.usingHDTexture}
-		/>
-	</label>
-	<NumericControl
-		label={'Normal Map Strength'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.normalStrength}
-		oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
-	/>
+	</fieldset>
 </fieldset>
 <hr />
 <fieldset>
@@ -121,5 +121,9 @@
 <style>
 	.form-margin {
 		margin-bottom: 1.5rem;
+	}
+
+	fieldset > fieldset {
+		margin-bottom: 0;
 	}
 </style>
