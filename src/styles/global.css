@@ -67,11 +67,7 @@ hgroup {
 }
 
 fieldset legend {
-	color: var(--pico-h3-color);
-	margin-bottom: 1rem;
-	font-size: 1.5rem;
-	font-weight: 700;
-	line-height: 1.175;
+	margin-bottom: 0;
 }
 
 .form-margin {
