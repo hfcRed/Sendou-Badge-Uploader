@@ -32,7 +32,7 @@
 </script>
 
 <fieldset>
-	<legend>Camera</legend>
+	<legend><h3>Camera</h3></legend>
 	<NumericControl
 		label="Distance"
 		min={0}
@@ -76,7 +76,7 @@
 </fieldset>
 <hr />
 <fieldset>
-	<legend>Utilities</legend>
+	<legend><h3>Utilities</h3></legend>
 	<label>
 		<input type="checkbox" role="switch" bind:checked={viewer.viewport.rulers} />
 		Rulers
