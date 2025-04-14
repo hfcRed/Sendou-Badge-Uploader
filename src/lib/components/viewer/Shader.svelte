@@ -2,10 +2,11 @@
 	import type { PicoCADRenderMode } from '$lib/picocad';
 	import { hexToRGB } from '$lib/utilities';
 	import { viewer } from './viewer-state.svelte';
+	import NumericControl from '../NumericControl.svelte';
 </script>
 
 <fieldset>
-	<legend>Rendering</legend>
+	<legend><h3>Rendering</h3></legend>
 	<label>
 		Render Mode
 		<select
@@ -27,8 +28,9 @@
 		/>
 		Shading
 	</label>
+	<h4>HD Texture</h4>
 	<label>
-		HD Shading Steps
+		Shading Steps
 		<input
 			type="range"
 			min="0"
@@ -40,7 +42,7 @@
 		/>
 	</label>
 	<label>
-		HD Shading Color
+		Shading Color
 		<input
 			type="color"
 			bind:value={viewer.shader.hdShadingColor}
@@ -48,10 +50,18 @@
 			disabled={!viewer.shader.usingHDTexture}
 		/>
 	</label>
+	<NumericControl
+		label={'Normal Map Strength'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.normalStrength}
+		oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
+	/>
 </fieldset>
 <hr />
 <fieldset>
-	<legend>Outline</legend>
+	<legend><h3>Outline</h3></legend>
 	<label>
 		Outline Width
 		<input
@@ -110,6 +120,6 @@
 
 <style>
 	.form-margin {
-		margin-bottom: 1.25rem;
+		margin-bottom: 1.5rem;
 	}
 </style>

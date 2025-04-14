@@ -1,11 +1,13 @@
 <script lang="ts">
+	import type { FormEventHandler } from 'svelte/elements';
+
 	interface Props {
 		label: string;
 		value: number;
 		min: number;
 		max: number;
 		step: number;
-		oninput?: VoidFunction;
+		oninput?: FormEventHandler<HTMLInputElement>;
 	}
 
 	let { label, min, max, step, value = $bindable(), oninput }: Props = $props();

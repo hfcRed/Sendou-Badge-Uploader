@@ -10,10 +10,11 @@
 
 	let viewportCanvas: HTMLCanvasElement;
 	let textureCanvas: HTMLCanvasElement;
+	let normalMapCanvas: HTMLCanvasElement;
 	let lightmapCanvas: HTMLCanvasElement;
 
 	onMount(() => {
-		viewer.init(viewportCanvas, textureCanvas, lightmapCanvas);
+		viewer.init(viewportCanvas, textureCanvas, normalMapCanvas, lightmapCanvas);
 	});
 </script>
 
@@ -80,6 +81,8 @@
 			<Tabs.Content value="textures">
 				<h3>Main Texture</h3>
 				<canvas class="texture" width="128" height="120" bind:this={textureCanvas}></canvas>
+				<h3>Normal Map</h3>
+				<canvas class="texture" width="128" height="120" bind:this={normalMapCanvas}></canvas>
 				<h3>Lightmap</h3>
 				<canvas class="texture" width="32" height="7" bind:this={lightmapCanvas}></canvas>
 			</Tabs.Content>

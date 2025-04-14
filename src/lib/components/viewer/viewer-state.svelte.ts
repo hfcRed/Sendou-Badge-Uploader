@@ -1,7 +1,8 @@
 import example from '$lib/picocad/files/example-model.txt?raw';
+import defaultNormalmap from '$lib/picocad/files/default-normalmap.png';
 import defaultLightmap from '$lib/picocad/files/default-lightmap.png';
 import { PicoCADViewer, type PicoCADRenderMode, type PicoCADSource } from '$lib/picocad';
-import { isPico8Texture, hexToRGB } from '$lib/utilities';
+import { isNormalMap, isPico8Texture, hexToRGB } from '$lib/utilities';
 
 interface Gif {
 	url: string | null;
@@ -44,6 +45,7 @@ interface ViewerSettings {
 	usingHDTexture: boolean;
 	hdShadingSteps: number;
 	hdShadingColor: string;
+	normalStrength: number;
 }
 
 export class Viewer {
@@ -70,7 +72,8 @@ export class Viewer {
 		wireframeColor: '#ffffff',
 		usingHDTexture: false,
 		hdShadingSteps: 3,
-		hdShadingColor: '#000000'
+		hdShadingColor: '#000000',
+		normalStrength: 1
 	});
 
 	gif = $state<Gif>({
@@ -91,6 +94,7 @@ export class Viewer {
 	modelName = $state('');
 
 	private textureCanvas = $state<CanvasRenderingContext2D>()!;
+	private normalMapCanvas = $state<CanvasRenderingContext2D>()!;
 	private lightmapCanvas = $state<CanvasRenderingContext2D>()!;
 
 	private worker!: Worker;
@@ -103,9 +107,11 @@ export class Viewer {
 	async init(
 		viewportCanvas: HTMLCanvasElement,
 		textureCanvas: HTMLCanvasElement,
+		normalMapCanvas: HTMLCanvasElement,
 		lightmapCanvas: HTMLCanvasElement
 	) {
 		this.textureCanvas = textureCanvas.getContext('2d')!;
+		this.normalMapCanvas = normalMapCanvas.getContext('2d')!;
 		this.lightmapCanvas = lightmapCanvas.getContext('2d')!;
 
 		this.pico?.free();
@@ -129,10 +135,6 @@ export class Viewer {
 			name: this.pico.model.name || 'untitled'
 		});
 
-		const img = new Image();
-		img.src = defaultLightmap;
-		img.onload = () => this.lightmapCanvas.drawImage(img, 0, 0);
-
 		this.pico.startDrawLoop(this.drawLoop.bind(this));
 
 		this.setupWorker();
@@ -143,8 +145,18 @@ export class Viewer {
 		await this.pico.load(source);
 
 		this.modelName = this.pico.model.name || 'untitled';
-
 		this.shader.usingHDTexture = false;
+
+		this.pico.removeNormalMap();
+		const normal = new Image();
+		normal.src = defaultNormalmap;
+		normal.onload = () => this.normalMapCanvas.drawImage(normal, 0, 0);
+
+		this.pico.resetLightMap();
+		const light = new Image();
+		light.src = defaultLightmap;
+		light.onload = () => this.lightmapCanvas.drawImage(light, 0, 0);
+
 		this.pico.removeHDTexture();
 		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
 	}
@@ -174,6 +186,7 @@ export class Viewer {
 		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
 		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
 		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
+		this.pico.hdOptions.normalMapStrength = data.normalStrength;
 	}
 
 	private drawLoop(delta: number) {
@@ -299,14 +312,26 @@ export class Viewer {
 		ctx.drawImage(img, 0, 0);
 		const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-		const isPico8 = isPico8Texture(data);
 		const isLightmap = data.width === 32 && data.height === 7;
+		const isNormal = isNormalMap(data);
+		const isPico8 = isPico8Texture(data);
 
 		if (isLightmap) {
 			this.pico.setLightMap(data);
 			this.lightmapCanvas.putImageData(data, 0, 0);
 			return;
 		}
+
+		if (isNormal) {
+			this.pico.setNormalMap(data);
+			this.normalMapCanvas.canvas.width = data.width;
+			this.normalMapCanvas.canvas.height = data.height;
+			this.normalMapCanvas.putImageData(data, 0, 0);
+			return;
+		}
+
+		this.textureCanvas.canvas.width = data.width;
+		this.textureCanvas.canvas.height = data.height;
 
 		if (isPico8) {
 			this.shader.usingHDTexture = false;

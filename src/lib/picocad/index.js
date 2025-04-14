@@ -116,6 +116,7 @@ export class PicoCADViewer {
 		this.hdOptions = {
 			shadingSteps: 4,
 			shadingColor: [0.1, 0.1, 0.1],
+			normalMapStrength: 1.0,  // Control the intensity of normal mapping
 		};
 
 		/** @private @type {Pass[]} */
@@ -473,6 +474,30 @@ export class PicoCADViewer {
 		if (this._hdTex != null) {
 			this.gl.deleteTexture(this._hdTex);
 			this._hdTex = null;
+		}
+	}
+
+	/**
+	 * @param {TexImageSource} texture 
+	 */
+	setNormalMap(texture) {
+		if (texture == null) {
+			this.removeNormalMap();
+			return;
+		}
+
+		/** @private */
+		this._normalMapTex = this._createTexture(this._normalMapTex, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, texture);
+	}
+
+	hasNormalMap() {
+		return this._normalMapTex != null;
+	}
+
+	removeNormalMap() {
+		if (this._normalMapTex != null) {
+			this.gl.deleteTexture(this._normalMapTex);
+			this._normalMapTex = null;
 		}
 	}
 
@@ -1011,6 +1036,17 @@ export class PicoCADViewer {
 					gl.activeTexture(gl.TEXTURE0);
 					gl.bindTexture(gl.TEXTURE_2D, this._hdTex);
 					gl.uniform1i(programInfo.locations.mainTex, 0);
+
+					// Normal map texture if available
+					if (this._normalMapTex) {
+						gl.activeTexture(gl.TEXTURE1);
+						gl.bindTexture(gl.TEXTURE_2D, this._normalMapTex);
+						gl.uniform1i(programInfo.locations.normalMap, 1);
+						gl.uniform1f(programInfo.locations.normalMapStrength, this.hdOptions.normalMapStrength);
+						gl.uniform1i(programInfo.locations.useNormalMap, 1);
+					} else {
+						gl.uniform1i(programInfo.locations.useNormalMap, 0);
+					}
 
 					// Light direction
 					gl.uniform3f(programInfo.locations.lightDir, lightVector.x, lightVector.y, lightVector.z);
@@ -1556,6 +1592,11 @@ export class PicoCADViewer {
 			gl.deleteTexture(this._fontTex);
 			this._fontTex = null;
 		}
+
+		if (this._normalMapTex) {
+			gl.deleteTexture(this._normalMapTex);
+			this._normalMapTex = null;
+		}
 	}
 }
 
@@ -1664,28 +1705,52 @@ function createHDTextureProgram(gl) {
 
 		varying highp vec2 v_uv;
 		varying highp vec3 v_normal;
+		varying highp vec3 v_tangent;
+		varying highp vec3 v_bitangent;
 
 		uniform mat4 mvp;
 
 		void main() {
 			v_uv = uv;
 			v_normal = normal;
+			
+			vec3 c1 = cross(normal, vec3(0.0, 0.0, 1.0));
+			vec3 c2 = cross(normal, vec3(0.0, 1.0, 0.0));
+			v_tangent = normalize(length(c1) > length(c2) ? c1 : c2);
+			v_bitangent = normalize(cross(normal, v_tangent));
+			
 			gl_Position = mvp * vertex;
 		}
 	`, `
 		varying highp vec2 v_uv;
 		varying highp vec3 v_normal;
+		varying highp vec3 v_tangent;
+		varying highp vec3 v_bitangent;
 		
 		uniform highp float lightSteps;
 		uniform sampler2D mainTex;
+		uniform sampler2D normalMap;
 		uniform highp vec3 lightDir;
 		uniform highp vec3 lightAmbient;
+		uniform highp float normalMapStrength;
+		uniform bool useNormalMap;
 
 		void main() {
 			highp vec4 col = texture2D(mainTex, v_uv);
 			if (col.a != 1.0) discard;
+			
+			highp vec3 normalVector = v_normal;
+			
+			if (useNormalMap) {
+				highp vec3 normalFromMap = normalize(texture2D(normalMap, v_uv).rgb * 2.0 - 1.0);
+				highp mat3 TBN = mat3(v_tangent, v_bitangent, v_normal);
+				highp vec3 mappedNormal = normalize(TBN * normalFromMap);
+				
+				normalVector = normalize(mix(normalVector, mappedNormal, normalMapStrength));
+			}
+			
 			highp float pixel = mod(gl_FragCoord.x + gl_FragCoord.y, 2.0);
-			highp float intensity = abs(dot(v_normal, lightDir)) * 2.2 - 0.2;
+			highp float intensity = abs(dot(normalVector, lightDir)) * 2.2 - 0.2;
 			intensity = floor(intensity * (lightSteps + 0.5) + pixel/2.0) / lightSteps;
 			intensity = clamp(intensity, 0.0, 1.0);
 			gl_FragColor = vec4(mix(col.rgb * lightAmbient, col.rgb, intensity), 1.0);
@@ -1701,7 +1766,10 @@ function createHDTextureProgram(gl) {
 			lightSteps: program.getUniformLocation("lightSteps"),
 			lightAmbient: program.getUniformLocation("lightAmbient"),
 			mainTex: program.getUniformLocation("mainTex"),
+			normalMap: program.getUniformLocation("normalMap"),
 			lightDir: program.getUniformLocation("lightDir"),
+			normalMapStrength: program.getUniformLocation("normalMapStrength"),
+			useNormalMap: program.getUniformLocation("useNormalMap"),
 		}
 	};
 }
