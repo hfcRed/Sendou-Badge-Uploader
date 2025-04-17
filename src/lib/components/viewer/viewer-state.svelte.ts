@@ -254,7 +254,7 @@ export class Viewer {
 				scale: 4,
 				delay: Math.round(delay * 1000),
 				background: this.pico.getRenderedBackgroundColor(),
-				palette: this.pico.hasHDTexture() ? null : this.pico.getPalette(),
+				palette: null,
 				transparentIndex: -1
 			});
 		} else if (

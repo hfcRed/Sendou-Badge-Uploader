@@ -2028,7 +2028,8 @@ function createChromaticAberrationProgram(gl) {
             highp vec4 g = texture2D(mainTex, uv - dir * factor * greenOffset);
             highp vec4 b = texture2D(mainTex, uv - dir * factor * blueOffset);
 
-            gl_FragColor = vec4(r.r, g.g, b.b, (r.a + g.a + b.a) / 3.0);
+            highp float alpha = (r.a + g.a + b.a) / 3.0;
+			gl_FragColor = vec4(r.r * alpha, g.g * alpha, b.b * alpha, 1.0);
 		}
 	`);
 
