@@ -73,7 +73,16 @@ export class Viewer {
 		usingHDTexture: false,
 		hdShadingSteps: 3,
 		hdShadingColor: '#000000',
-		normalStrength: 1
+		normalStrength: 1,
+		chromaticAberration: {
+			strength: 0,
+			redOffset: 1,
+			greenOffset: 0,
+			blueOffset: -1,
+			radialFalloff: 1.5,
+			centerX: 0,
+			centerY: 0
+		}
 	});
 
 	gif = $state<Gif>({
@@ -187,6 +196,13 @@ export class Viewer {
 		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
 		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
 		this.pico.hdOptions.normalMapStrength = data.normalStrength;
+		this.pico.chromaticAberration.strength = this.shader.chromaticAberration.strength;
+		this.pico.chromaticAberration.redOffset = this.shader.chromaticAberration.redOffset;
+		this.pico.chromaticAberration.greenOffset = this.shader.chromaticAberration.greenOffset;
+		this.pico.chromaticAberration.blueOffset = this.shader.chromaticAberration.blueOffset;
+		this.pico.chromaticAberration.radialFalloff = this.shader.chromaticAberration.radialFalloff;
+		this.pico.chromaticAberration.centerX = this.shader.chromaticAberration.centerX;
+		this.pico.chromaticAberration.centerY = this.shader.chromaticAberration.centerY;
 	}
 
 	private drawLoop(delta: number) {

@@ -57,8 +57,9 @@
 	</fieldset>
 </fieldset>
 <hr />
+<h3>Effects</h3>
 <fieldset>
-	<legend><h3>Outline</h3></legend>
+	<legend><h4>Outline</h4></legend>
 	<NumericControl
 		label={'Outline Width'}
 		min={0}
@@ -79,7 +80,7 @@
 </fieldset>
 <hr />
 <fieldset>
-	<legend>Wireframe</legend>
+	<legend><h4>Wireframe</h4></legend>
 	<div role="group">
 		<label>
 			<input
@@ -110,6 +111,69 @@
 			disabled={!viewer.shader.wireframe}
 		/>
 	</label>
+</fieldset>
+<hr />
+<fieldset class="tighten">
+	<legend><h4>Chromatic Aberration</h4></legend>
+	<NumericControl
+		label={'Strength'}
+		min={0}
+		max={2}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.strength}
+		oninput={(e) => (viewer.pico.chromaticAberration.strength = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Red Offset'}
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.redOffset}
+		oninput={(e) => (viewer.pico.chromaticAberration.redOffset = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Green Offset'}
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.greenOffset}
+		oninput={(e) =>
+			(viewer.pico.chromaticAberration.greenOffset = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Blue Offset'}
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.blueOffset}
+		oninput={(e) =>
+			(viewer.pico.chromaticAberration.blueOffset = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Radial Falloff'}
+		min={-2}
+		max={2}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.radialFalloff}
+		oninput={(e) =>
+			(viewer.pico.chromaticAberration.radialFalloff = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Center X'}
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.centerX}
+		oninput={(e) => (viewer.pico.chromaticAberration.centerX = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Center Y'}
+		min={-1}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.chromaticAberration.centerY}
+		oninput={(e) => (viewer.pico.chromaticAberration.centerY = parseFloat(e.currentTarget.value))}
+	/>
 </fieldset>
 
 <style>

@@ -84,6 +84,27 @@ export class PicoCADViewer {
 		 */
 		this.outlineSize = 0;
 		/**
+		 * Options for the chromatic aberration effect.
+		 * @type {{
+		 *   strength: number,
+		 *   redOffset: number,
+		 *   greenOffset: number,
+		 *   blueOffset: number,
+		 *   radialFalloff: number,
+		 *   centerX: number,
+		 *   centerY: number
+		 * }}
+		 */
+		this.chromaticAberration = {
+			strength: 0,
+			redOffset: 1.0,
+			greenOffset: 0.0,
+			blueOffset: 1.0,
+			radialFalloff: 2.0,
+			centerX: 0.5,
+			centerY: 0.5
+		};
+		/**
 		 * @type {string|null}
 		 * @private
 		 */
@@ -148,6 +169,9 @@ export class PicoCADViewer {
 
 		/** @private */
 		this._programOutline = createOutlineProgram(gl);
+
+		/** @private */
+		this._programChromatic = createChromaticAberrationProgram(gl);
 
 		/** @private */
 		this._depthBuffer = gl.createRenderbuffer();
@@ -1133,8 +1157,9 @@ export class PicoCADViewer {
 		// Postprocessing.
 		let currFrameBufferTex = this._frameBufferTex;
 		let outlineIterations = this.outlineSize;
+		let doChromaticAberration = this.chromaticAberration.strength > 0;
 
-		if (outlineIterations > 0) {
+		if (outlineIterations > 0 || doChromaticAberration) {
 			// If we have any post-processing to do, clear the second framebuffer.
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
 			gl.clear(gl.COLOR_BUFFER_BIT);
@@ -1182,6 +1207,51 @@ export class PicoCADViewer {
 				// Finalize swap.
 				currFrameBufferTex = nextFrameBufferTex;
 			}
+		}
+
+		// Chromatic aberration
+		if (doChromaticAberration) {
+			// Swap target framebuffer.
+			let nextFrameBufferTex;
+			if (currFrameBufferTex === this._frameBufferTex) {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
+				nextFrameBufferTex = this._frameBufferTex2;
+			} else {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
+				nextFrameBufferTex = this._frameBufferTex;
+			}
+
+			let chromaticProgram = this._programChromatic;
+			chromaticProgram.program.use();
+
+			gl.uniform2f(chromaticProgram.locations.resolution, this._resolution[0], this._resolution[1]);
+			gl.uniform1f(chromaticProgram.locations.amount, this.chromaticAberration.strength);
+			gl.uniform1f(chromaticProgram.locations.redOffset, this.chromaticAberration.redOffset);
+			gl.uniform1f(chromaticProgram.locations.greenOffset, this.chromaticAberration.greenOffset);
+			gl.uniform1f(chromaticProgram.locations.blueOffset, this.chromaticAberration.blueOffset);
+			gl.uniform1f(chromaticProgram.locations.radialFalloff, this.chromaticAberration.radialFalloff);
+			gl.uniform2f(chromaticProgram.locations.center, this.chromaticAberration.centerX, this.chromaticAberration.centerY);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(
+				chromaticProgram.program.vertexLocation,
+				2,
+				gl.FLOAT,
+				false,
+				0,
+				0
+			);
+			gl.enableVertexAttribArray(chromaticProgram.program.vertexLocation);
+
+			// Draw to framebuffer.
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(chromaticProgram.locations.mainTex, 0);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Finalize swap.
+			currFrameBufferTex = nextFrameBufferTex;
 		}
 
 		// Record which framebuffer has the most recent render.
@@ -1564,8 +1634,10 @@ export class PicoCADViewer {
 
 		this._programTexture.program.free();
 		this._programWireframe.program.free();
+		this._programChromatic.program.free();
 		this._programTexture = null;
 		this._programWireframe = null;
+		this._programChromatic = null;
 
 		gl.deleteFramebuffer(this._frameBuffer);
 		gl.deleteFramebuffer(this._frameBuffer2);
@@ -1914,6 +1986,63 @@ function createTextProgram(gl) {
 			data: program.getUniformLocation("data"),
 			mainTex: program.getUniformLocation("mainTex"),
 			color: program.getUniformLocation("color"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl 
+ */
+function createChromaticAberrationProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+		
+		uniform sampler2D mainTex;
+		uniform highp vec2 resolution;
+		uniform highp float amount;
+		uniform highp float redOffset;
+		uniform highp float greenOffset;
+		uniform highp float blueOffset;
+		uniform highp float radialFalloff;
+		uniform highp vec2 center;
+
+		void main() {
+            highp vec2 uv = v_uv;
+            highp vec2 texel = 1.0 / resolution;
+            highp vec2 dir = normalize(uv - center);
+
+            highp float dist = length(uv - center) * 2.0;
+            highp float falloffFactor = pow(dist, radialFalloff);
+            highp float factor = falloffFactor * amount * texel.x;
+
+            highp vec4 r = texture2D(mainTex, uv - dir * factor * redOffset);
+            highp vec4 g = texture2D(mainTex, uv - dir * factor * greenOffset);
+            highp vec4 b = texture2D(mainTex, uv - dir * factor * blueOffset);
+
+            gl_FragColor = vec4(r.r, g.g, b.b, (r.a + g.a + b.a) / 3.0);
+		}
+	`);
+
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			resolution: program.getUniformLocation("resolution"),
+			amount: program.getUniformLocation("amount"),
+			redOffset: program.getUniformLocation("redOffset"),
+			greenOffset: program.getUniformLocation("greenOffset"),
+			blueOffset: program.getUniformLocation("blueOffset"),
+			radialFalloff: program.getUniformLocation("radialFalloff"),
+			center: program.getUniformLocation("center"),
 		}
 	};
 }
