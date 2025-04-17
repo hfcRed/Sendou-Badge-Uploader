@@ -103,20 +103,7 @@ export const actions = {
 
 			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
 			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
-			const test = await uploadFile(
-				username,
-				`${shorthandName}.avif`,
-				shorthandName,
-				headers,
-				avif
-			);
-			console.log(await test.json());
-
-			return {
-				success: true,
-				for: 'create',
-				message: 'prJson.html_url'
-			};
+			await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
 
 			const prJson = await createPullRequest(
 				username,
@@ -126,6 +113,12 @@ export const actions = {
 				notes,
 				headers
 			);
+
+			return {
+				success: true,
+				for: 'create',
+				message: prJson.html_url
+			};
 		} catch (error) {
 			console.error('Error creating PR: ', error);
 			return fail(500, {
