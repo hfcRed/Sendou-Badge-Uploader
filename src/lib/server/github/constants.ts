@@ -8,6 +8,7 @@ export const BASE_BRANCH = dev ? 'main' : 'rewrite';
 export const REPO_OWNER = dev ? 'hfcRed' : 'Sendouc';
 export const REPO_NAME = dev ? 'PR-Testing' : 'sendou.ink';
 export const FILE_PATH = dev ? 'homemade.ts' : 'app/features/badges/homemade.ts';
+export const DIRECTORY = dev ? 'badges' : 'public/static-assets/badges';
 
 const CALLBACK_URL = dev
 	? 'http://localhost:5173/login/callback'

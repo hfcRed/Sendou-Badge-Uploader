@@ -1,5 +1,5 @@
 import { CLIENT_ID, CLIENT_SECRET } from '$env/static/private';
-import { BASE_URL, BASE_BRANCH, REPO_OWNER, REPO_NAME, FILE_PATH } from './constants';
+import { BASE_URL, BASE_BRANCH, REPO_OWNER, REPO_NAME, FILE_PATH, DIRECTORY } from './constants';
 
 export interface GitHubApiHeaders {
 	Authorization: string;
@@ -91,7 +91,7 @@ export async function uploadFile(
 	headers: GitHubApiHeaders,
 	file: File
 ) {
-	const fullPath = `${BASE_URL}/repos/${username}/${REPO_NAME}/contents/${fileName}`;
+	const fullPath = `${BASE_URL}/repos/${username}/${REPO_NAME}/contents/${DIRECTORY}/${fileName}`;
 	const base64Content = await fileToBase64(file);
 
 	const fileCheck = await fetch(`${fullPath}?ref=${branch}`, {
