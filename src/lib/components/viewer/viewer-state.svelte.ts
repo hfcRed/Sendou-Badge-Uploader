@@ -208,6 +208,7 @@ export class Viewer {
 	private drawLoop(delta: number) {
 		if (this.viewport.turntable) {
 			if (this.gif.recording) {
+				delta = 0.02;
 				this.viewport.cameraRotation += delta * this.viewport.turntableSpeed;
 			} else {
 				this.viewport.cameraRotation = parseFloat(
@@ -235,7 +236,7 @@ export class Viewer {
 	}
 
 	private processFrame(delta: number) {
-		const maxTime = 10;
+		const maxTime = 100;
 		const delay = 0.02;
 		const previous = this.gif.time;
 		this.gif.time += delta;
