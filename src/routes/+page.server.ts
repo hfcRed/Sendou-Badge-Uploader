@@ -15,12 +15,9 @@ import {
 	getUserData
 } from '$lib/server/github/helpers';
 import {
-	parseBadgeList,
-	createBadgeEntry,
-	addBadgeToFile,
-	replaceBadgeInFile,
 	fetchCreatorDiscordId,
 	checkBadgeNameExists,
+	insertNewBadge,
 	type BadgeInfo
 } from '$lib/server/github/badges';
 import {
@@ -67,11 +64,10 @@ export const actions = {
 				});
 			}
 
-			const badgesJson = await fetchBadgesFile(REPO_OWNER, BASE_BRANCH, headers);
-			const badgesText = atob(badgesJson.content);
-			const badgeList = await parseBadgeList(badgesText);
+			const badgesFile = await fetchBadgesFile(REPO_OWNER, BASE_BRANCH, headers);
+			const badgesJson = JSON.parse(atob(badgesFile.content));
 
-			if (checkBadgeNameExists(badgeList, shorthandName)) {
+			if (checkBadgeNameExists(badgesJson, shorthandName)) {
 				return fail(400, {
 					success: false,
 					for: 'create',
@@ -83,23 +79,17 @@ export const actions = {
 
 			const newBadge: BadgeInfo = {
 				displayName: displayName,
-				fileName: shorthandName,
 				authorDiscordId: discordId
 			};
-			const newBadgeEntry = createBadgeEntry(newBadge);
-			const updatedBadgesText = addBadgeToFile(badgesText, newBadgeEntry);
+
+			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
+			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t');
 
 			await createForkIfNeeded(username, headers);
 			await createBranch(username, shorthandName, headers);
 
 			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
-			await updateBadgesFile(
-				username,
-				shorthandName,
-				updatedBadgesText,
-				forkBadgesJson.sha,
-				headers
-			);
+			await updateBadgesFile(username, shorthandName, newBadgeFile, forkBadgesJson.sha, headers);
 
 			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
 			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
@@ -180,31 +170,27 @@ export const actions = {
 
 			const branchName = prJson.head.ref;
 
-			const badgesJson = await fetchBadgesFile(username, branchName, headers);
-			const badgesText = atob(badgesJson.content);
-			const badgeList = await parseBadgeList(badgesText);
+			const badgesFile = await fetchBadgesFile(username, branchName, headers);
+			const badgesJson = JSON.parse(atob(badgesFile.content));
 
-			const discordId = await fetchCreatorDiscordId(creator);
-
-			const newBadge: BadgeInfo = {
-				displayName: displayName,
-				fileName: shorthandName,
-				authorDiscordId: discordId
-			};
-			const newBadgeEntry = createBadgeEntry(newBadge);
-
-			let updatedBadgesText;
+			if (checkBadgeNameExists(badgesJson, shorthandName)) {
+				return fail(400, {
+					success: false,
+					for: 'update',
+					message: 'New badge shorthand name already exists!'
+				});
+			}
 
 			if (updateType === 'existing') {
-				if (checkBadgeNameExists(badgeList, shorthandName)) {
+				if (!updateName) {
 					return fail(400, {
 						success: false,
 						for: 'update',
-						message: 'New badge shorthand name already exists!'
+						message: 'Please provide the name of the badge you want to update!'
 					});
 				}
 
-				if (!checkBadgeNameExists(badgeList, updateName!)) {
+				if (!checkBadgeNameExists(badgesJson, updateName)) {
 					return fail(400, {
 						success: false,
 						for: 'update',
@@ -212,33 +198,24 @@ export const actions = {
 					});
 				}
 
-				try {
-					updatedBadgesText = replaceBadgeInFile(badgesText, updateName!, newBadgeEntry);
-				} catch (error) {
-					console.error('Error replacing badge entry:', error);
-					return fail(400, {
-						success: false,
-						for: 'update',
-						message: 'Could not locate the badge entry to update!'
-					});
-				}
+				delete badgesJson[updateName];
 
 				await deleteFile(username, `${updateName}.gif`, branchName, headers);
 				await deleteFile(username, `${updateName}.png`, branchName, headers);
 				await deleteFile(username, `${updateName}.avif`, branchName, headers);
-			} else {
-				if (checkBadgeNameExists(badgeList, shorthandName)) {
-					return fail(400, {
-						success: false,
-						for: 'update',
-						message: 'New badge shorthand name already exists!'
-					});
-				}
-
-				updatedBadgesText = addBadgeToFile(badgesText, newBadgeEntry);
 			}
 
-			await updateBadgesFile(username, branchName, updatedBadgesText, badgesJson.sha, headers);
+			const discordId = await fetchCreatorDiscordId(creator);
+
+			const newBadge: BadgeInfo = {
+				displayName: displayName,
+				authorDiscordId: discordId
+			};
+
+			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
+			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t');
+
+			await updateBadgesFile(username, branchName, newBadgeFile, badgesFile.sha, headers);
 
 			await uploadFile(username, `${shorthandName}.gif`, branchName, headers, gif);
 			await uploadFile(username, `${shorthandName}.png`, branchName, headers, png);

@@ -118,7 +118,7 @@ export async function deleteFile(
 	branch: string,
 	headers: GitHubApiHeaders
 ) {
-	const fullPath = `${BASE_URL}/repos/${username}/${REPO_NAME}/contents/${fileName}`;
+	const fullPath = `${BASE_URL}/repos/${username}/${REPO_NAME}/contents/${DIRECTORY}/${fileName}`;
 	const fileCheck = await fetch(`${fullPath}?ref=${branch}`, {
 		method: 'GET',
 		headers
