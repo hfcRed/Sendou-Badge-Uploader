@@ -90,8 +90,8 @@ fieldset legend {
 .grid-container {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 2rem;
-	padding: 1rem;
+	gap: 1rem;
+	padding: 1rem 0;
 
 	@media (max-width: 768px) {
 		grid-template-columns: 1fr;
@@ -102,7 +102,7 @@ fieldset legend {
 .flex-container {
 	display: flex;
 	flex-direction: column;
-	padding: 1rem;
+	padding: 1rem 0;
 
 	@media (max-width: 768px) {
 		gap: 1rem;

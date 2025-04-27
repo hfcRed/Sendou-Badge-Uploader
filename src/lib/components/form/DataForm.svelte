@@ -206,4 +206,8 @@
 			height: 100%;
 		}
 	}
+
+	small {
+		color: var(--pico-muted-color);
+	}
 </style>

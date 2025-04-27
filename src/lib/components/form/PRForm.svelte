@@ -187,6 +187,7 @@
 			<Tabs.Content value="manual">
 				<p>Download the badge files to create a Pull Request manually</p>
 				<hr />
+				<h3>Download</h3>
 				<fieldset class="grid">
 					<button onclick={() => downloadFile('gif')} disabled={!viewer.gif.url}
 						>Download GIF</button
