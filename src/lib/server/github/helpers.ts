@@ -194,12 +194,13 @@ export async function createForkIfNeeded(username: string, headers: GitHubApiHea
 	const hasRepo = reposJson.some((repo: { name: string }) => repo.name === REPO_NAME);
 
 	if (!hasRepo) {
-		await fetch(`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/forks`, {
+		const a = await fetch(`${BASE_URL}/repos/${REPO_OWNER}/${REPO_NAME}/forks`, {
 			method: 'POST',
 			headers
 		});
 
 		await new Promise((resolve) => setTimeout(resolve, 5000));
+		return a.json();
 	}
 }
 

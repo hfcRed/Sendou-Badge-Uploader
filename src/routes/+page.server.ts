@@ -43,8 +43,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions = {
 	createPR: async ({ request, locals }) => {
 		try {
-			console.log('Creating PR...');
-
 			const result = await validateCreateRequest(request);
 			if (!result.success) return result.error;
 
@@ -102,7 +100,7 @@ export const actions = {
 			const f = await createForkIfNeeded(username, headers);
 			console.log('Fork created: ', f);
 			const b = await createBranch(username, shorthandName, headers);
-			console.log('Branch created: ', b);
+			console.log('Branch created: ', await b.json());
 
 			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
 			console.log('Fork badges JSON fetched: ', !!forkBadgesJson);
@@ -113,12 +111,12 @@ export const actions = {
 				forkBadgesJson.sha,
 				headers
 			);
-			console.log('Badges file updated: ', u);
+			console.log('Badges file updated: ', await u.json());
 
 			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
 			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
 			const g = await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
-			console.log('Files uploaded: ', g);
+			console.log('Files uploaded: ', await g.json());
 
 			const prJson = await createPullRequest(
 				username,
