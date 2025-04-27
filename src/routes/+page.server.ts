@@ -104,7 +104,7 @@ export const actions = {
 				headers
 			);
 
-			if (prJson.status !== '201') {
+			if (prJson.status === '422') {
 				return fail(400, {
 					success: false,
 					for: 'create',
