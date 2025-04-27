@@ -46,20 +46,14 @@ export const actions = {
 			const result = await validateCreateRequest(request);
 			if (!result.success) return result.error;
 
-			console.log('Validation result: ', result);
-
 			const user = checkUserAuthentication(locals);
 			if (!user.success) return user.error;
-
-			console.log('User authenticated: ', user);
 
 			const { shorthandName, displayName, creator, notes, gif, png, avif } = result.output;
 			const username = locals.user.name;
 			const headers = createGitHubHeaders(locals.user.token);
 
 			const prCheckJson = await checkPullRequest(username, shorthandName, headers);
-
-			console.log('PR check result: ', prCheckJson);
 
 			if (prCheckJson.length > 0) {
 				return fail(400, {
@@ -73,8 +67,6 @@ export const actions = {
 			const badgesFile = await fetchBadgesFile(REPO_OWNER, BASE_BRANCH, headers);
 			const badgesJson = JSON.parse(atob(badgesFile.content));
 
-			console.log('Badges JSON created: ', !!badgesJson);
-
 			if (checkBadgeNameExists(badgesJson, shorthandName)) {
 				return fail(400, {
 					success: false,
@@ -85,8 +77,6 @@ export const actions = {
 
 			const discordId = await fetchCreatorDiscordId(creator);
 
-			console.log('Discord ID fetched: ', discordId);
-
 			const newBadge: BadgeInfo = {
 				displayName: displayName,
 				authorDiscordId: discordId
@@ -95,28 +85,15 @@ export const actions = {
 			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
 			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t');
 
-			console.log('New badge JSON created: ', !!newBadgeJson);
-
-			const f = await createForkIfNeeded(username, headers);
-			console.log('Fork created: ', f);
-			const b = await createBranch(username, shorthandName, headers);
-			console.log('Branch created: ', await b.json());
+			await createForkIfNeeded(username, headers);
+			await createBranch(username, shorthandName, headers);
 
 			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
-			console.log('Fork badges JSON fetched: ', !!forkBadgesJson);
-			const u = await updateBadgesFile(
-				username,
-				shorthandName,
-				newBadgeFile,
-				forkBadgesJson.sha,
-				headers
-			);
-			console.log('Badges file updated: ', await u.json());
+			await updateBadgesFile(username, shorthandName, newBadgeFile, forkBadgesJson.sha, headers);
 
 			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
 			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
-			const g = await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
-			console.log('Files uploaded: ', await g.json());
+			await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
 
 			const prJson = await createPullRequest(
 				username,
@@ -126,8 +103,6 @@ export const actions = {
 				notes,
 				headers
 			);
-
-			console.log('Pull Request created: ', prJson);
 
 			if (prJson.status !== '201') {
 				return fail(400, {
