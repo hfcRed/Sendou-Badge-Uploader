@@ -173,9 +173,8 @@ export async function createBranch(
 		}
 	);
 	const branchRefJson = await branchRef.json();
-	console.log(branchRefJson);
 
-	const test = await fetch(`${BASE_URL}/repos/${username}/${REPO_NAME}/git/refs`, {
+	return await fetch(`${BASE_URL}/repos/${username}/${REPO_NAME}/git/refs`, {
 		method: 'POST',
 		headers,
 		body: JSON.stringify({
@@ -183,8 +182,6 @@ export async function createBranch(
 			sha: branchRefJson.object.sha
 		})
 	});
-
-	console.log(await test.json());
 }
 
 export async function createForkIfNeeded(username: string, headers: GitHubApiHeaders) {

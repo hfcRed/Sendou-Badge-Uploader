@@ -30,8 +30,6 @@ export function isNormalMap(image: ImageData) {
 		totalPixels++;
 	}
 
-	console.log(blueSum / totalPixels);
-
 	return blueSum / totalPixels > 0.6;
 }
 
