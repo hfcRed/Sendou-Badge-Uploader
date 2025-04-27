@@ -75,14 +75,36 @@
 				<p>Automatically create and update Pull Requests</p>
 				<hr />
 				{#if data.loggedIn}
+					<h3>Checklist</h3>
+					<fieldset>
+						<label class="disabled">
+							<input type="checkbox" form="badge" checked={!!viewer.gif.url} required />
+							<span>GIF generated</span>
+						</label>
+						<label class="disabled">
+							<input type="checkbox" form="badge" checked={!!viewer.selectedImage?.url} required />
+							<span>Image selected</span>
+						</label>
+						<label>
+							<input type="checkbox" form="badge" required />
+							<span>Rotation speed matches overlay speed</span>
+						</label>
+						<label>
+							<input type="checkbox" form="badge" required />
+							<span>Model centered vertically and horizontally</span>
+						</label>
+						<label>
+							<input type="checkbox" form="badge" required />
+							<span>Model zoomed in to minimize empty space</span>
+						</label>
+					</fieldset>
 					<h3>Create New</h3>
 					<button
 						type="submit"
 						form="badge"
 						formaction="?/createPR"
 						aria-busy={submitting}
-						disabled={!viewer.gif.url || !viewer.selectedImage?.url || submitting}
-						>Create New Pull Request</button
+						disabled={submitting}>Create New Pull Request</button
 					>
 					{#if form && form.for === 'create' && !submitting}
 						{#if !form.success}
@@ -154,8 +176,7 @@
 						form="badge"
 						formaction="?/updatePR"
 						aria-busy={submitting}
-						disabled={!viewer.gif.url || !viewer.selectedImage?.url || submitting}
-						>Update Pull Request</button
+						disabled={submitting}>Update Pull Request</button
 					>
 					{#if form && form.for === 'update' && !submitting}
 						{#if !form.success}
@@ -203,3 +224,13 @@
 		</Tabs.Root>
 	</div>
 </section>
+
+<style>
+	.disabled {
+		pointer-events: none;
+
+		& input {
+			opacity: var(--pico-form-element-disabled-opacity);
+		}
+	}
+</style>
