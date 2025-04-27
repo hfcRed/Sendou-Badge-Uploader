@@ -5,6 +5,8 @@
 
 	let { shorthandName = $bindable('') } = $props();
 
+	let initSG = $state(false);
+
 	async function splitGifIntoFrames() {
 		viewer.images = {
 			generating: true,
@@ -20,11 +22,13 @@
 		[canvas.width, canvas.height] = [img.naturalWidth, img.naturalHeight];
 		const ctx = canvas.getContext('2d')!;
 
+		initSG = true;
 		const gif = new SuperGif(img, {
 			autoplay: false,
 			maxWidth: 511.999999999999
 		});
 		await new Promise((resolve) => gif.load(resolve));
+		initSG = false;
 
 		const frames = gif.getLength();
 		for (let i = 0; i < frames; i++) {
@@ -62,9 +66,10 @@
 		</div>
 		<div class="images-container">
 			<button
+				aria-busy={initSG}
 				disabled={viewer.gif.url === '' || viewer.images.generating}
 				onclick={() => splitGifIntoFrames()}
-				>{#if !viewer.images.generating}Generate Images{:else}{viewer.images.progress} %{/if}</button
+				>{#if !viewer.images.generating}Generate Images{:else if !initSG}{viewer.images.progress} %{/if}</button
 			>
 			<div class="img-display">
 				{#if viewer.images.generated.length > 0}
