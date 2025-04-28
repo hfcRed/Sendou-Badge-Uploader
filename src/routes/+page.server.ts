@@ -181,7 +181,7 @@ export const actions = {
 			const badgesFile = await fetchBadgesFile(username, branchName, headers);
 			const badgesJson = JSON.parse(atob(badgesFile.content));
 
-			if (checkBadgeNameExists(badgesJson, shorthandName)) {
+			if (updateName !== shorthandName && checkBadgeNameExists(badgesJson, shorthandName)) {
 				return fail(400, {
 					success: false,
 					for: 'update',
