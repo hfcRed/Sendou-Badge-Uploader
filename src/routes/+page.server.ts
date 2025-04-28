@@ -83,7 +83,7 @@ export const actions = {
 			};
 
 			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
-			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t');
+			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t') + '\n';
 
 			await createForkIfNeeded(username, headers);
 			await createBranch(username, shorthandName, headers);
@@ -221,7 +221,7 @@ export const actions = {
 			};
 
 			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
-			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t');
+			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t') + '\n';
 
 			await updateBadgesFile(username, branchName, newBadgeFile, badgesFile.sha, headers);
 
