@@ -52,6 +52,11 @@
 			>Pixel art tips and tricks</a
 		>
 	</li>
+	<li>
+		<a href="https://speakthesky.itch.io/custom-picocad-shape-pack" target="_blank"
+			>PicoCAD shape pack</a
+		>
+	</li>
 </ul>
 <hr />
 <h2>Community Tools</h2>
