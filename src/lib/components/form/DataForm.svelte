@@ -67,7 +67,7 @@
 		<div class="images-container">
 			<button
 				aria-busy={initSG}
-				disabled={viewer.gif.url === '' || viewer.images.generating}
+				disabled={!viewer.gif.url || viewer.images.generating}
 				onclick={() => splitGifIntoFrames()}
 				>{#if !viewer.images.generating}Generate Images{:else if !initSG}{viewer.images.progress} %{/if}</button
 			>
