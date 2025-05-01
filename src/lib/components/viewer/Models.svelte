@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { viewer } from './viewer-state.svelte';
-	import { hexToRGB } from '$lib/utilities';
 	import { urlCompressModel, urlDecompressModel } from '$lib/picocad/model-compression';
 
 	interface SavedModel {
