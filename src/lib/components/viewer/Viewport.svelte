@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { viewer } from './viewer-state.svelte';
 	import NumericControl from '../NumericControl.svelte';
+	import Dialog from '../Dialog.svelte';
+	import Shortcuts from './Shortcuts.svelte';
 
 	function getModelCenter() {
 		const objects = viewer.pico.model.objects;
@@ -92,6 +94,15 @@
 			viewer.viewport.cameraHeight = center.y;
 		}}>Center Model</button
 	>
+	<Dialog buttonText="Shortcuts">
+		{#snippet title()}
+			Shortcuts
+		{/snippet}
+
+		{#snippet description()}
+			<Shortcuts />
+		{/snippet}
+	</Dialog>
 </fieldset>
 <hr />
 <label>
