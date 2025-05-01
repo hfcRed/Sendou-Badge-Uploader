@@ -102,6 +102,7 @@ export class Viewer {
 
 	modelName = $state('');
 
+	private viewportCanvas!: HTMLCanvasElement;
 	private textureCanvas = $state<CanvasRenderingContext2D>()!;
 	private normalMapCanvas = $state<CanvasRenderingContext2D>()!;
 	private lightmapCanvas = $state<CanvasRenderingContext2D>()!;
@@ -110,6 +111,13 @@ export class Viewer {
 	workerLoaded = $state(false);
 
 	private eventHandlers: Record<string, EventListenerOrEventListenerObject> | null = null;
+	private mouse = {
+		x: 0,
+		y: 0,
+		isDragging: false,
+		lastX: 0,
+		lastY: 0
+	};
 
 	pico!: PicoCADViewer;
 
@@ -119,6 +127,7 @@ export class Viewer {
 		normalMapCanvas: HTMLCanvasElement,
 		lightmapCanvas: HTMLCanvasElement
 	) {
+		this.viewportCanvas = viewportCanvas;
 		this.textureCanvas = textureCanvas.getContext('2d')!;
 		this.normalMapCanvas = normalMapCanvas.getContext('2d')!;
 		this.lightmapCanvas = lightmapCanvas.getContext('2d')!;
@@ -397,6 +406,49 @@ export class Viewer {
 				e.preventDefault();
 
 				this.handleKeyboardInput(e.key.toLowerCase());
+			}) as EventListener,
+
+			mousemove: ((e: MouseEvent) => {
+				if (!this.mouse.isDragging) return;
+
+				const deltaX = e.clientX - this.mouse.lastX;
+				const deltaY = e.clientY - this.mouse.lastY;
+
+				this.viewport.cameraRotation = parseFloat(
+					((this.viewport.cameraRotation + deltaX * 0.01) % (Math.PI * 2)).toFixed(3)
+				);
+				if (this.viewport.cameraRotation < 0)
+					parseFloat((this.viewport.cameraRotation += Math.PI * 2).toFixed(3));
+
+				this.viewport.cameraTilt = parseFloat(
+					Math.max(Math.min(this.viewport.cameraTilt + deltaY * 0.01, 1), -1).toFixed(2)
+				);
+
+				this.mouse.lastX = e.clientX;
+				this.mouse.lastY = e.clientY;
+			}) as EventListener,
+
+			mousedown: ((e: MouseEvent) => {
+				e.preventDefault();
+
+				this.mouse.isDragging = true;
+				this.mouse.lastX = e.clientX;
+				this.mouse.lastY = e.clientY;
+
+				this.viewport.turntable = false;
+			}) as EventListener,
+
+			mouseup: (() => {
+				this.mouse.isDragging = false;
+			}) as EventListener,
+
+			wheel: ((e: WheelEvent) => {
+				e.preventDefault();
+
+				const zoomAmount = e.deltaY * 0.001;
+				this.viewport.cameraDistance = parseFloat(
+					Math.max(Math.min(this.viewport.cameraDistance + zoomAmount, 100), 0).toFixed(2)
+				);
 			}) as EventListener
 		};
 
@@ -406,6 +458,19 @@ export class Viewer {
 		window.addEventListener('drop', this.eventHandlers.drop as EventListener);
 		window.addEventListener('paste', this.eventHandlers.paste as EventListener);
 		window.addEventListener('keydown', this.eventHandlers.keydown as EventListener);
+
+		this.viewportCanvas.addEventListener(
+			'mousemove',
+			this.eventHandlers.mousemove as EventListener
+		);
+		this.viewportCanvas.addEventListener(
+			'mousedown',
+			this.eventHandlers.mousedown as EventListener
+		);
+		this.viewportCanvas.addEventListener('mouseup', this.eventHandlers.mouseup as EventListener);
+		this.viewportCanvas.addEventListener('wheel', this.eventHandlers.wheel as EventListener, {
+			passive: false
+		});
 	}
 
 	private handleKeyboardInput(key: string) {
@@ -460,6 +525,14 @@ export class Viewer {
 		window.removeEventListener('drop', this.eventHandlers.drop as EventListener);
 		window.removeEventListener('paste', this.eventHandlers.paste as EventListener);
 		window.removeEventListener('keydown', this.eventHandlers.keydown as EventListener);
+
+		window.removeEventListener('mousemove', this.eventHandlers.mousemove as EventListener);
+		this.viewportCanvas.removeEventListener(
+			'mousedown',
+			this.eventHandlers.mousedown as EventListener
+		);
+		window.removeEventListener('mouseup', this.eventHandlers.mouseup as EventListener);
+		this.viewportCanvas.removeEventListener('wheel', this.eventHandlers.wheel as EventListener);
 	}
 }
 
