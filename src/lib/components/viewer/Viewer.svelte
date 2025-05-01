@@ -13,8 +13,26 @@
 	let normalMapCanvas: HTMLCanvasElement;
 	let lightmapCanvas: HTMLCanvasElement;
 
+	let tab = $state('viewport');
+
 	onMount(() => {
 		viewer.init(viewportCanvas, textureCanvas, normalMapCanvas, lightmapCanvas);
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === '1') {
+				tab = 'viewport';
+			} else if (e.key === '2') {
+				tab = 'shader';
+			} else if (e.key === '3') {
+				tab = 'textures';
+			} else if (e.key === '4') {
+				tab = 'models';
+			}
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+
+		return () => window.removeEventListener('keydown', handleKeyDown);
 	});
 </script>
 
@@ -35,7 +53,7 @@
 				</aside>
 			{/if}
 		</div>
-		<Tabs.Root orientation="horizontal" value="viewport">
+		<Tabs.Root orientation="horizontal" bind:value={tab}>
 			<Tabs.List>
 				{#snippet child()}
 					<div class="tablist-container">
