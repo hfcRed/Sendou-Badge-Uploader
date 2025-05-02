@@ -59,9 +59,9 @@
 <hr />
 <h3>Effects</h3>
 <fieldset>
-	<legend><h4>Outlines</h4></legend>
+	<legend><h4>First Outline</h4></legend>
 	<NumericControl
-		label={'First Width'}
+		label={'Width'}
 		min={0}
 		max={25}
 		step={1}
@@ -69,16 +69,43 @@
 		oninput={(e) => (viewer.pico.outline.sizeA = parseFloat(e.currentTarget.value))}
 	/>
 	<label>
-		First Color
+		Color
 		<input
 			type="color"
 			bind:value={viewer.shader.outline.colorA}
 			oninput={(e) => (viewer.pico.outline.colorA = hexToRGB(e.currentTarget.value))}
-			disabled={viewer.shader.outline.sizeA <= 0}
+		/>
+	</label>
+	<label>
+		Gradient Color
+		<input
+			type="color"
+			bind:value={viewer.shader.outline.colorA2}
+			oninput={(e) => (viewer.pico.outline.colorA2 = hexToRGB(e.currentTarget.value))}
 		/>
 	</label>
 	<NumericControl
-		label={'Second Width'}
+		label={'Gradient Strength'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.outline.gradientA}
+		oninput={(e) => (viewer.pico.outline.gradientA = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Gradient Direction'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.outline.gradientDirectionA}
+		oninput={(e) => (viewer.pico.outline.gradientDirectionA = parseFloat(e.currentTarget.value))}
+	/>
+</fieldset>
+<hr />
+<fieldset>
+	<legend><h4>Second Outline</h4></legend>
+	<NumericControl
+		label={'Width'}
 		min={0}
 		max={25}
 		step={1}
@@ -86,14 +113,37 @@
 		oninput={(e) => (viewer.pico.outline.sizeB = parseFloat(e.currentTarget.value))}
 	/>
 	<label>
-		Second Color
+		Color
 		<input
 			type="color"
 			bind:value={viewer.shader.outline.colorB}
 			oninput={(e) => (viewer.pico.outline.colorB = hexToRGB(e.currentTarget.value))}
-			disabled={viewer.shader.outline.sizeB <= 0}
 		/>
 	</label>
+	<label>
+		Gradient Color
+		<input
+			type="color"
+			bind:value={viewer.shader.outline.colorB2}
+			oninput={(e) => (viewer.pico.outline.colorB2 = hexToRGB(e.currentTarget.value))}
+		/>
+	</label>
+	<NumericControl
+		label={'Gradient Strength'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.outline.gradientB}
+		oninput={(e) => (viewer.pico.outline.gradientB = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Gradient Direction'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.outline.gradientDirectionB}
+		oninput={(e) => (viewer.pico.outline.gradientDirectionB = parseFloat(e.currentTarget.value))}
+	/>
 </fieldset>
 <hr />
 <fieldset>

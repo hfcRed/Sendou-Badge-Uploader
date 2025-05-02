@@ -40,8 +40,14 @@ interface ViewerSettings {
 	outline: {
 		sizeA: number;
 		colorA: string;
+		colorA2: string;
+		gradientA: number;
+		gradientDirectionA: number;
 		sizeB: number;
 		colorB: string;
+		colorB2: string;
+		gradientB: number;
+		gradientDirectionB: number;
 	};
 	wireframe: boolean;
 	wireframeXray: boolean;
@@ -72,8 +78,14 @@ export class Viewer {
 		outline: {
 			sizeA: 0,
 			colorA: '#ffffff',
+			colorA2: '#ffffff',
+			gradientA: 0,
+			gradientDirectionA: 0,
 			sizeB: 0,
-			colorB: '#ffffff'
+			colorB: '#ffffff',
+			colorB2: '#ffffff',
+			gradientB: 0,
+			gradientDirectionB: 0
 		},
 		wireframe: false,
 		wireframeXray: true,
@@ -362,19 +374,29 @@ export class Viewer {
 		};
 
 		this.pico.setWatermark(data.watermark);
+
 		this.pico.backgroundColor = [0, 0, 0, 1];
 		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
 		this.pico.shading = data.shading;
-		this.pico.outline.sizeA = data.outline.sizeA;
-		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
-		this.pico.outline.sizeB = data.outline.sizeB;
-		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
 		this.pico.drawWireframe = data.wireframe;
 		this.pico.wireframeXray = data.wireframeXray;
 		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
+
 		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
 		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
 		this.pico.hdOptions.normalMapStrength = data.normalStrength;
+
+		this.pico.outline.sizeA = data.outline.sizeA;
+		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
+		this.pico.outline.colorA2 = hexToRGB(data.outline.colorA2);
+		this.pico.outline.gradientA = data.outline.gradientA;
+		this.pico.outline.gradientDirectionA = data.outline.gradientDirectionA;
+		this.pico.outline.sizeB = data.outline.sizeB;
+		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
+		this.pico.outline.colorB2 = hexToRGB(data.outline.colorB2);
+		this.pico.outline.gradientB = data.outline.gradientB;
+		this.pico.outline.gradientDirectionB = data.outline.gradientDirectionB;
+
 		this.pico.chromaticAberration.strength = this.shader.chromaticAberration.strength;
 		this.pico.chromaticAberration.redOffset = this.shader.chromaticAberration.redOffset;
 		this.pico.chromaticAberration.greenOffset = this.shader.chromaticAberration.greenOffset;

@@ -76,15 +76,27 @@ export class PicoCADViewer {
 		 * @type {{
 		 *   sizeA: number,
 		 *   colorA: number[],
+		 *   colorA2: number[],
+		 *   gradientA: number,
+		 *   gradientDirectionA: number,
 		 *   sizeB: number,
-		 *   colorB: number[]
+		 *   colorB: number[],
+		 *   colorB2: number[],
+		 *   gradientB: number,
+		 *   gradientDirectionB: number
 		 * }}
 		 */
 		this.outline = {
 			sizeA: 0,
-			colorA: [0, 0, 0, 1],
+			colorA: [1, 1, 1, 1],
+			colorA2: [1, 1, 1, 1],
+			gradientA: 0,
+			gradientDirectionA: 0,
 			sizeB: 0,
 			colorB: [1, 1, 1, 1],
+			colorB2: [1, 1, 1, 1],
+			gradientB: 0,
+			gradientDirectionB: 0,
 		};
 		/**
 		 * Options for the chromatic aberration effect.
@@ -1177,11 +1189,18 @@ export class PicoCADViewer {
 		// First outline.
 		if (outlineAIterations > 0) {
 			let outlineProgram = this._programOutline;
-
 			outlineProgram.program.use();
 
+			const gradA = this.outline.gradientA ?? 0;
+			const dirA = this.outline.gradientDirectionA ?? 0;
+			const colorA1 = this.outline.colorA;
+			const colorA2 = this.outline.colorA2 ?? this.outline.colorA;
+
+			gl.uniform4f(outlineProgram.locations.outlineColor, colorA1[0], colorA1[1], colorA1[2], colorA1[3] ?? 1);
+			gl.uniform4f(outlineProgram.locations.outlineColor2, colorA2[0], colorA2[1], colorA2[2], colorA2[3] ?? 1);
+			gl.uniform1f(outlineProgram.locations.gradient, gradA);
+			gl.uniform1f(outlineProgram.locations.gradientDirection, dirA);
 			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
-			gl.uniform4f(outlineProgram.locations.outlineColor, this.outline.colorA[0], this.outline.colorA[1], this.outline.colorA[2], this.outline.colorA[3] ?? 1);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(
@@ -1220,11 +1239,18 @@ export class PicoCADViewer {
 		// Second outline.
 		if (outlineBIterations > 0) {
 			let outlineProgram = this._programOutline;
-
 			outlineProgram.program.use();
 
+			const gradB = this.outline.gradientB ?? 0;
+			const dirB = this.outline.gradientDirectionB ?? 0;
+			const colorB1 = this.outline.colorB;
+			const colorB2 = this.outline.colorB2 ?? this.outline.colorB;
+
+			gl.uniform4f(outlineProgram.locations.outlineColor, colorB1[0], colorB1[1], colorB1[2], colorB1[3] ?? 1);
+			gl.uniform4f(outlineProgram.locations.outlineColor2, colorB2[0], colorB2[1], colorB2[2], colorB2[3] ?? 1);
+			gl.uniform1f(outlineProgram.locations.gradient, gradB);
+			gl.uniform1f(outlineProgram.locations.gradientDirection, dirB);
 			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
-			gl.uniform4f(outlineProgram.locations.outlineColor, this.outline.colorB[0], this.outline.colorB[1], this.outline.colorB[2], this.outline.colorB[3] ?? 1);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(
@@ -1977,18 +2003,29 @@ function createOutlineProgram(gl) {
 		
 		uniform sampler2D mainTex;
 		uniform highp vec2 pixel;
+
 		uniform lowp vec4 outlineColor;
+		uniform lowp vec4 outlineColor2;
+
+		uniform highp float gradient;
+		uniform highp float gradientDirection;
 
 		void main() {
 			lowp float a = 1.0 - texture2D(mainTex, v_uv).a;
 			lowp float b = texture2D(mainTex, v_uv + vec2(pixel.x, 0.0)).a + texture2D(mainTex, v_uv - vec2(pixel.x, 0.0)).a + texture2D(mainTex, v_uv + vec2(0.0, pixel.y)).a + texture2D(mainTex, v_uv - vec2(0.0, pixel.y)).a;
+
+			highp float angle = gradientDirection * 6.2831853; // 2π
+			highp vec2 dir = vec2(cos(angle), sin(angle));
+			highp float t = dot(v_uv - 0.5, dir) + 0.5;
+
+			lowp vec4 gradColor = mix(outlineColor, outlineColor2, clamp(gradient, 0.0, 1.0) * t);
 			gl_FragColor = mix(
 				mix(
 					texture2D(mainTex, v_uv),
 					vec4(0.0, 0.0, 0.0, 0.0),
 					a
 				),
-				outlineColor,
+				gradColor,
 				min(1.0, a * b)
 			);
 		}
@@ -2000,6 +2037,9 @@ function createOutlineProgram(gl) {
 			mainTex: program.getUniformLocation("mainTex"),
 			pixel: program.getUniformLocation("pixel"),
 			outlineColor: program.getUniformLocation("outlineColor"),
+			outlineColor2: program.getUniformLocation("outlineColor2"),
+			gradient: program.getUniformLocation("gradient"),
+			gradientDirection: program.getUniformLocation("gradientDirection"),
 		}
 	};
 }
