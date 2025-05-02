@@ -71,6 +71,7 @@ export class PicoCADViewer {
 		 * @type {number[]}
 		 */
 		this.backgroundColor = null;
+
 		/**
 		 * Outline options.
 		 * @type {{
@@ -98,6 +99,7 @@ export class PicoCADViewer {
 			gradientB: 0,
 			gradientDirectionB: 0,
 		};
+
 		/**
 		 * Options for the chromatic aberration effect.
 		 * @type {{
@@ -119,6 +121,62 @@ export class PicoCADViewer {
 			centerX: 0.5,
 			centerY: 0.5
 		};
+
+		/**
+		 * Options for post-processing effects.
+		 * @type {{
+		 * 	 colorGrading: {enabled: boolean, brightness: number, contrast: number, saturation: number, hue: number},
+		 * 	 posterize: {enabled: boolean, levels: number},
+		 * 	 noise: {enabled: boolean, amount: number},
+		 * 	 bloom: {enabled: boolean, threshold: number, intensity: number, blur: number},
+		 * 	 dither: {enabled: boolean, amount: number},
+		 * 	 crt: {enabled: boolean, curvature: number, scanlineIntensity: number},
+		 * 	 pixelate: {enabled: boolean, pixelSize: number},
+		 * 	 lensDistortion: {enabled: boolean, strength: number, zoom: number}
+		 * }}
+		 */
+		this.postProcessing = {
+			colorGrading: {
+				enabled: false,
+				brightness: 1.0,
+				contrast: 1.0,
+				saturation: 1.0,
+				hue: 1.0,
+			},
+			posterize: {
+				enabled: false,
+				levels: 3,
+			},
+			noise: {
+				enabled: false,
+				amount: 0.05,
+			},
+			bloom: {
+				enabled: false,
+				threshold: 0.7,
+				intensity: 0.5,
+				blur: 1.0,
+			},
+			dither: {
+				enabled: false,
+				amount: 0.5,
+			},
+			crt: {
+				enabled: false,
+				curvature: 0.5,
+				scanlineIntensity: 0.3,
+			},
+			pixelate: {
+				enabled: false,
+				pixelSize: 1,
+			},
+			lensDistortion: {
+				enabled: false,
+				strength: 1.0,
+				zoom: 2.0,
+			},
+		};
+
 		/**
 		 * @type {string|null}
 		 * @private
@@ -228,6 +286,23 @@ export class PicoCADViewer {
 		gl.enable(gl.DEPTH_TEST);
 		gl.depthFunc(gl.LEQUAL);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+
+		/** @private */
+		this._programColorGrade = createColorGradeProgram(gl);
+		/** @private */
+		this._programPosterize = createPosterizeProgram(gl);
+		/** @private */
+		this._programNoise = createNoiseProgram(gl);
+		/** @private */
+		this._programBloom = createBloomProgram(gl);
+		/** @private */
+		this._programDither = createDitherProgram(gl);
+		/** @private */
+		this._programCRT = createCRTProgram(gl);
+		/** @private */
+		this._programPixelate = createPixelateProgram(gl);
+		// Add lens distortion program
+		this._programLensDistortion = createLensDistortionProgram(gl);
 	}
 
 	/**
@@ -1180,11 +1255,20 @@ export class PicoCADViewer {
 		let outlineBIterations = this.outline.sizeB;
 		let doChromaticAberration = this.chromaticAberration.strength > 0;
 
-		if (outlineAIterations > 0 || outlineBIterations > 0 || doChromaticAberration) {
-			// If we have any post-processing to do, clear the second framebuffer.
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
-			gl.clear(gl.COLOR_BUFFER_BIT);
-		}
+		const swapFB = () => {
+			let nextFrameBufferTex;
+			if (currFrameBufferTex === this._frameBufferTex) {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
+				nextFrameBufferTex = this._frameBufferTex2;
+			} else {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
+				nextFrameBufferTex = this._frameBufferTex;
+			}
+			return nextFrameBufferTex;
+		};
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
+		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		// First outline.
 		if (outlineAIterations > 0) {
@@ -1215,14 +1299,7 @@ export class PicoCADViewer {
 
 			for (let i = 0; i < outlineAIterations; i++) {
 				// Swap target framebuffer.
-				let nextFrameBufferTex;
-				if (currFrameBufferTex === this._frameBufferTex) {
-					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
-					nextFrameBufferTex = this._frameBufferTex2;
-				} else {
-					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
-					nextFrameBufferTex = this._frameBufferTex;
-				}
+				let nextTex = swapFB();
 
 				// Draw to framebuffer.
 				gl.activeTexture(gl.TEXTURE0);
@@ -1232,7 +1309,7 @@ export class PicoCADViewer {
 				gl.drawArrays(gl.TRIANGLES, 0, 6);
 
 				// Finalize swap.
-				currFrameBufferTex = nextFrameBufferTex;
+				currFrameBufferTex = nextTex;
 			}
 		}
 
@@ -1265,14 +1342,7 @@ export class PicoCADViewer {
 
 			for (let i = 0; i < outlineBIterations; i++) {
 				// Swap target framebuffer.
-				let nextFrameBufferTex;
-				if (currFrameBufferTex === this._frameBufferTex) {
-					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
-					nextFrameBufferTex = this._frameBufferTex2;
-				} else {
-					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
-					nextFrameBufferTex = this._frameBufferTex;
-				}
+				let nextTex = swapFB();
 
 				// Draw to framebuffer.
 				gl.activeTexture(gl.TEXTURE0);
@@ -1282,21 +1352,14 @@ export class PicoCADViewer {
 				gl.drawArrays(gl.TRIANGLES, 0, 6);
 
 				// Finalize swap.
-				currFrameBufferTex = nextFrameBufferTex;
+				currFrameBufferTex = nextTex;
 			}
 		}
 
 		// Chromatic aberration
 		if (doChromaticAberration) {
 			// Swap target framebuffer.
-			let nextFrameBufferTex;
-			if (currFrameBufferTex === this._frameBufferTex) {
-				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
-				nextFrameBufferTex = this._frameBufferTex2;
-			} else {
-				gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
-				nextFrameBufferTex = this._frameBufferTex;
-			}
+			let nextTex = swapFB();
 
 			let chromaticProgram = this._programChromatic;
 			chromaticProgram.program.use();
@@ -1328,7 +1391,172 @@ export class PicoCADViewer {
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
 
 			// Finalize swap.
-			currFrameBufferTex = nextFrameBufferTex;
+			currFrameBufferTex = nextTex;
+		}
+
+		// Color grading/adjustment
+		if (this.postProcessing.colorGrading.enabled) {
+			let prog = this._programColorGrade;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.brightness, this.postProcessing.colorGrading.brightness);
+			gl.uniform1f(prog.locations.contrast, this.postProcessing.colorGrading.contrast);
+			gl.uniform1f(prog.locations.saturation, this.postProcessing.colorGrading.saturation);
+			gl.uniform1f(prog.locations.hue, this.postProcessing.colorGrading.hue);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Posterization
+		if (this.postProcessing.posterize.enabled) {
+			let prog = this._programPosterize;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.levels, this.postProcessing.posterize.levels);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Noise/film grain
+		if (this.postProcessing.noise.enabled) {
+			let prog = this._programNoise;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.amount, this.postProcessing.noise.amount);
+			gl.uniform1f(prog.locations.time, performance.now() / 1000);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Bloom/glow
+		if (this.postProcessing.bloom.enabled) {
+			let prog = this._programBloom;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.threshold, this.postProcessing.bloom.threshold);
+			gl.uniform1f(prog.locations.intensity, this.postProcessing.bloom.intensity);
+			gl.uniform1f(prog.locations.blur, this.postProcessing.bloom.blur);
+			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Dithering
+		if (this.postProcessing.dither.enabled) {
+			let prog = this._programDither;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.amount, this.postProcessing.dither.amount);
+			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// CRT
+		if (this.postProcessing.crt.enabled) {
+			let prog = this._programCRT;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.curvature, this.postProcessing.crt.curvature);
+			gl.uniform1f(prog.locations.scanlineIntensity, this.postProcessing.crt.scanlineIntensity);
+			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Pixelation
+		if (this.postProcessing.pixelate.enabled) {
+			let prog = this._programPixelate;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.pixelSize, this.postProcessing.pixelate.pixelSize);
+			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Lens Distortion
+		if (this.postProcessing.lensDistortion && this.postProcessing.lensDistortion.enabled) {
+			let prog = this._programLensDistortion;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.strength, this.postProcessing.lensDistortion.strength);
+			gl.uniform1f(prog.locations.zoom, this.postProcessing.lensDistortion.zoom);
+			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
 		}
 
 		// Record which framebuffer has the most recent render.
@@ -2136,6 +2364,405 @@ function createChromaticAberrationProgram(gl) {
 			blueOffset: program.getUniformLocation("blueOffset"),
 			radialFalloff: program.getUniformLocation("radialFalloff"),
 			center: program.getUniformLocation("center"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createColorGradeProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float brightness;
+		uniform highp float contrast;
+		uniform highp float saturation;
+		uniform highp float hue;
+
+		highp vec3 rgb2hsv(highp vec3 c) {
+			highp float cmax = max(c.r, max(c.g, c.b));
+			highp float cmin = min(c.r, min(c.g, c.b));
+			highp float delta = cmax - cmin;
+			highp float h = 0.0;
+
+			if (delta > 0.0) {
+				if (cmax == c.r) h = mod((c.g - c.b) / delta, 6.0);
+				else if (cmax == c.g) h = (c.b - c.r) / delta + 2.0;
+				else h = (c.r - c.g) / delta + 4.0;
+				h /= 6.0;
+			}
+
+			highp float s = cmax == 0.0 ? 0.0 : delta / cmax;
+			return vec3(h, s, cmax);
+		}
+
+		highp vec3 hsv2rgb(highp vec3 c) {
+			highp float h = c.x * 6.0;
+			highp float s = c.y;
+			highp float v = c.z;
+			highp float f = fract(h);
+			highp float p = v * (1.0 - s);
+			highp float q = v * (1.0 - f * s);
+			highp float t = v * (1.0 - (1.0 - f) * s);
+
+			if (h < 1.0) return vec3(v, t, p);
+			if (h < 2.0) return vec3(q, v, p);
+			if (h < 3.0) return vec3(p, v, t);
+			if (h < 4.0) return vec3(p, q, v);
+			if (h < 5.0) return vec3(t, p, v);
+
+			return vec3(v, p, q);
+		}
+
+		void main() {
+			highp vec4 col = texture2D(mainTex, v_uv);
+			col.rgb = (col.rgb - 0.5) * contrast + 0.5;
+			col.rgb *= brightness;
+
+			highp vec3 hsv = rgb2hsv(col.rgb);
+			hsv.y *= saturation;
+			hsv.x = mod(hsv.x + hue, 1.0);
+
+			col.rgb = hsv2rgb(hsv);
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			brightness: program.getUniformLocation("brightness"),
+			contrast: program.getUniformLocation("contrast"),
+			saturation: program.getUniformLocation("saturation"),
+			hue: program.getUniformLocation("hue"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createPosterizeProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float levels;
+
+		void main() {
+			highp vec4 col = texture2D(mainTex, v_uv);
+
+			col.rgb = floor(col.rgb * levels) / (levels - 1.0);
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			levels: program.getUniformLocation("levels"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createNoiseProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float amount;
+		uniform highp float time;
+
+		void main() {
+			highp vec4 col = texture2D(mainTex, v_uv);
+			highp float n = fract(sin(dot((v_uv * 512.0).xy, vec2(12.9898,78.233))) * 43758.5453 + time);
+
+			col.rgb += (n - 0.5) * amount;
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			amount: program.getUniformLocation("amount"),
+			time: program.getUniformLocation("time"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createBloomProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float threshold;
+		uniform highp float intensity;
+		uniform highp float blur;
+		uniform highp vec2 resolution;
+
+		void main() {
+			highp vec4 col = texture2D(mainTex, v_uv);
+			highp vec3 bloom = vec3(0.0);
+			highp float count = 0.0;
+
+			for (int x = -2; x <= 2; x++) {
+				for (int y = -2; y <= 2; y++) {
+					highp vec2 offset = vec2(float(x), float(y)) * blur / resolution;
+					highp vec3 c = texture2D(mainTex, v_uv + offset).rgb;
+					if (max(max(c.r, c.g), c.b) > threshold) {
+						bloom += c;
+						count += 1.0;
+					}
+				}
+			}
+
+			if (count > 0.0) bloom /= count;
+
+			col.rgb += bloom * intensity;
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			threshold: program.getUniformLocation("threshold"),
+			intensity: program.getUniformLocation("intensity"),
+			blur: program.getUniformLocation("blur"),
+			resolution: program.getUniformLocation("resolution"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createDitherProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float amount;
+		uniform highp vec2 resolution;
+
+		highp float bayer4x4(int x, int y) {
+			if (x == 0 && y == 0) return 0.0;
+			if (x == 1 && y == 0) return 8.0;
+			if (x == 2 && y == 0) return 2.0;
+			if (x == 3 && y == 0) return 10.0;
+			if (x == 0 && y == 1) return 12.0;
+			if (x == 1 && y == 1) return 4.0;
+			if (x == 2 && y == 1) return 14.0;
+			if (x == 3 && y == 1) return 6.0;
+			if (x == 0 && y == 2) return 3.0;
+			if (x == 1 && y == 2) return 11.0;
+			if (x == 2 && y == 2) return 1.0;
+			if (x == 3 && y == 2) return 9.0;
+			if (x == 0 && y == 3) return 15.0;
+			if (x == 1 && y == 3) return 7.0;
+			if (x == 2 && y == 3) return 13.0;
+			if (x == 3 && y == 3) return 5.0;
+			return 0.0;
+		}
+
+		void main() {
+			highp vec4 col = texture2D(mainTex, v_uv);
+			highp vec2 pos = v_uv * resolution;
+
+			int xi = int(mod(pos.x, 4.0));
+			int yi = int(mod(pos.y, 4.0));
+
+			highp float threshold = (bayer4x4(xi, yi) + 0.5) / 16.0 * amount;
+
+			col.rgb = floor(col.rgb + threshold);
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			amount: program.getUniformLocation("amount"),
+			resolution: program.getUniformLocation("resolution"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createCRTProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float curvature;
+		uniform highp float scanlineIntensity;
+		uniform highp vec2 resolution;
+
+		void main() {
+			highp vec2 uv = v_uv;
+
+			uv = uv * 2.0 - 1.0;
+			uv.x *= 1.0 + curvature * pow(uv.y, 2.0);
+			uv.y *= 1.0 + curvature * pow(uv.x, 2.0);
+			uv = (uv + 1.0) * 0.5;
+
+			highp vec4 col = texture2D(mainTex, uv);
+			highp float scan = sin(uv.y * resolution.y * 3.14159) * 0.5 + 0.5;
+			
+			col.rgb *= mix(1.0, scan, scanlineIntensity);
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			curvature: program.getUniformLocation("curvature"),
+			scanlineIntensity: program.getUniformLocation("scanlineIntensity"),
+			resolution: program.getUniformLocation("resolution"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createPixelateProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+
+		uniform sampler2D mainTex;
+		uniform highp float pixelSize;
+		uniform highp vec2 resolution;
+
+		void main() {
+			highp vec2 uv = floor(v_uv * resolution / pixelSize) * pixelSize / resolution;
+			highp vec4 col = texture2D(mainTex, uv);
+			gl_FragColor = col;
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			pixelSize: program.getUniformLocation("pixelSize"),
+			resolution: program.getUniformLocation("resolution"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ */
+function createLensDistortionProgram(gl) {
+	const program = new ShaderProgram(gl, `
+		attribute vec4 vertex;
+		varying highp vec2 v_uv;
+
+		void main() {
+			v_uv = 0.5 + vertex.xy * 0.5;
+			gl_Position = vertex;
+		}
+	`, `
+		varying highp vec2 v_uv;
+		
+		uniform sampler2D mainTex;
+		uniform highp float strength;
+		uniform highp float zoom;
+		uniform highp vec2 resolution;
+
+		void main() {
+			highp vec2 uv = v_uv * 2.0 - 1.0; // [-1,1] range
+			highp float r = length(uv);
+			highp float theta = atan(uv.y, uv.x);
+
+			highp float k = strength;
+			highp float rn = r + k * pow(r,3.0);
+
+			rn /= zoom;
+
+			highp vec2 distorted = rn * vec2(cos(theta), sin(theta));
+			highp vec2 sampleUV = (distorted + 1.0) * 0.5;
+
+			if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+				gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+			} else {
+				gl_FragColor = texture2D(mainTex, sampleUV);
+			}
+		}
+	`);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
+			strength: program.getUniformLocation("strength"),
+			zoom: program.getUniformLocation("zoom"),
+			resolution: program.getUniformLocation("resolution"),
 		}
 	};
 }
