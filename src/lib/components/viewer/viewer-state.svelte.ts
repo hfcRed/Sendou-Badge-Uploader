@@ -187,43 +187,6 @@ export class Viewer {
 		this.textureCanvas.putImageData(this.pico.getModelTexture(), 0, 0);
 	}
 
-	loadSettings(data: ViewerSettings) {
-		this.modelName = data.name;
-
-		this.viewport = {
-			...this.viewport,
-			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.viewport))
-		};
-
-		this.shader = {
-			...this.shader,
-			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.shader)),
-			usingHDTexture: false
-		};
-
-		this.pico.setWatermark(data.watermark);
-		this.pico.backgroundColor = [0, 0, 0, 1];
-		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
-		this.pico.shading = data.shading;
-		this.pico.outline.sizeA = data.outline.sizeA;
-		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
-		this.pico.outline.sizeB = data.outline.sizeB;
-		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
-		this.pico.drawWireframe = data.wireframe;
-		this.pico.wireframeXray = data.wireframeXray;
-		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
-		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
-		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
-		this.pico.hdOptions.normalMapStrength = data.normalStrength;
-		this.pico.chromaticAberration.strength = this.shader.chromaticAberration.strength;
-		this.pico.chromaticAberration.redOffset = this.shader.chromaticAberration.redOffset;
-		this.pico.chromaticAberration.greenOffset = this.shader.chromaticAberration.greenOffset;
-		this.pico.chromaticAberration.blueOffset = this.shader.chromaticAberration.blueOffset;
-		this.pico.chromaticAberration.radialFalloff = this.shader.chromaticAberration.radialFalloff;
-		this.pico.chromaticAberration.centerX = this.shader.chromaticAberration.centerX;
-		this.pico.chromaticAberration.centerY = this.shader.chromaticAberration.centerY;
-	}
-
 	private drawLoop(delta: number) {
 		if (this.viewport.turntable) {
 			if (this.gif.recording) {
@@ -382,6 +345,43 @@ export class Viewer {
 
 		URL.revokeObjectURL(url);
 		canvas.remove();
+	}
+
+	loadSettings(data: ViewerSettings) {
+		this.modelName = data.name;
+
+		this.viewport = {
+			...this.viewport,
+			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.viewport))
+		};
+
+		this.shader = {
+			...this.shader,
+			...Object.fromEntries(Object.entries(data).filter(([key]) => key in this.shader)),
+			usingHDTexture: false
+		};
+
+		this.pico.setWatermark(data.watermark);
+		this.pico.backgroundColor = [0, 0, 0, 1];
+		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
+		this.pico.shading = data.shading;
+		this.pico.outline.sizeA = data.outline.sizeA;
+		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
+		this.pico.outline.sizeB = data.outline.sizeB;
+		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
+		this.pico.drawWireframe = data.wireframe;
+		this.pico.wireframeXray = data.wireframeXray;
+		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
+		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
+		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
+		this.pico.hdOptions.normalMapStrength = data.normalStrength;
+		this.pico.chromaticAberration.strength = this.shader.chromaticAberration.strength;
+		this.pico.chromaticAberration.redOffset = this.shader.chromaticAberration.redOffset;
+		this.pico.chromaticAberration.greenOffset = this.shader.chromaticAberration.greenOffset;
+		this.pico.chromaticAberration.blueOffset = this.shader.chromaticAberration.blueOffset;
+		this.pico.chromaticAberration.radialFalloff = this.shader.chromaticAberration.radialFalloff;
+		this.pico.chromaticAberration.centerX = this.shader.chromaticAberration.centerX;
+		this.pico.chromaticAberration.centerY = this.shader.chromaticAberration.centerY;
 	}
 
 	private addEventListeners() {
