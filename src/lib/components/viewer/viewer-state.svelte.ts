@@ -37,8 +37,12 @@ interface ViewerSettings {
 	isCentered: boolean;
 	renderMode: string;
 	shading: boolean;
-	outlineWidth: number;
-	outlineColor: string;
+	outline: {
+		sizeA: number;
+		colorA: string;
+		sizeB: number;
+		colorB: string;
+	};
 	wireframe: boolean;
 	wireframeXray: boolean;
 	wireframeColor: string;
@@ -65,8 +69,12 @@ export class Viewer {
 	shader = $state({
 		renderMode: 'Texture',
 		shading: true,
-		outlineWidth: 0,
-		outlineColor: '#ffffff',
+		outline: {
+			sizeA: 0,
+			colorA: '#ffffff',
+			sizeB: 0,
+			colorB: '#ffffff'
+		},
 		wireframe: false,
 		wireframeXray: true,
 		wireframeColor: '#ffffff',
@@ -197,8 +205,10 @@ export class Viewer {
 		this.pico.backgroundColor = [0, 0, 0, 1];
 		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
 		this.pico.shading = data.shading;
-		this.pico.outlineSize = data.outlineWidth;
-		this.pico.outlineColor = hexToRGB(data.outlineColor);
+		this.pico.outline.sizeA = data.outline.sizeA;
+		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
+		this.pico.outline.sizeB = data.outline.sizeB;
+		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
 		this.pico.drawWireframe = data.wireframe;
 		this.pico.wireframeXray = data.wireframeXray;
 		this.pico.wireframeColor = hexToRGB(data.wireframeColor);

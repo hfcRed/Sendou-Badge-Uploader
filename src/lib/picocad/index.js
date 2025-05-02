@@ -72,17 +72,20 @@ export class PicoCADViewer {
 		 */
 		this.backgroundColor = null;
 		/**
-		 * The outline color. As [R, G, B] or [R, G, B, A] (each component [0, 1]).
-		 * @type {number[]}
+		 * Outline options.
+		 * @type {{
+		 *   sizeA: number,
+		 *   colorA: number[],
+		 *   sizeB: number,
+		 *   colorB: number[]
+		 * }}
 		 */
-		this.outlineColor = [0, 0, 0, 1];
-		/**
-		 * The outline size in pixels.
-		 * 
-		 * An additional draw call is needed for each pixel increment.
-		 * @type {number}
-		 */
-		this.outlineSize = 0;
+		this.outline = {
+			sizeA: 0,
+			colorA: [0, 0, 0, 1],
+			sizeB: 0,
+			colorB: [1, 1, 1, 1],
+		};
 		/**
 		 * Options for the chromatic aberration effect.
 		 * @type {{
@@ -323,11 +326,16 @@ export class PicoCADViewer {
 			colors.push(wireframe);
 		}
 
-		// Add custom outline.
-		if (this.outlineSize >= 1) {
-			const outline = rgb01to255(this.outlineColor);
+		// Add custom outlines.
+		if (this.outline.size >= 1) {
+			const outline = rgb01to255(this.outline.color);
 			if (outline.length != 4) outline.push(255);
 			colors.push(outline);
+		}
+		if (this.outline.size2 >= 1) {
+			const outline2 = rgb01to255(this.outline.color2);
+			if (outline2.length != 4) outline2.push(255);
+			colors.push(outline2);
 		}
 
 		// Add custom background
@@ -1156,24 +1164,24 @@ export class PicoCADViewer {
 
 		// Postprocessing.
 		let currFrameBufferTex = this._frameBufferTex;
-		let outlineIterations = this.outlineSize;
+		let outlineAIterations = this.outline.sizeA;
+		let outlineBIterations = this.outline.sizeB;
 		let doChromaticAberration = this.chromaticAberration.strength > 0;
 
-		if (outlineIterations > 0 || doChromaticAberration) {
+		if (outlineAIterations > 0 || outlineBIterations > 0 || doChromaticAberration) {
 			// If we have any post-processing to do, clear the second framebuffer.
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
 			gl.clear(gl.COLOR_BUFFER_BIT);
 		}
 
-		// Outlines.
-		if (outlineIterations > 0) {
+		// First outline.
+		if (outlineAIterations > 0) {
 			let outlineProgram = this._programOutline;
 
 			outlineProgram.program.use();
 
 			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
-
-			gl.uniform4f(outlineProgram.locations.outlineColor, this.outlineColor[0], this.outlineColor[1], this.outlineColor[2], this.outlineColor[3] ?? 1);
+			gl.uniform4f(outlineProgram.locations.outlineColor, this.outline.colorA[0], this.outline.colorA[1], this.outline.colorA[2], this.outline.colorA[3] ?? 1);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(
@@ -1186,7 +1194,50 @@ export class PicoCADViewer {
 			);
 			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
 
-			for (let i = 0; i < outlineIterations; i++) {
+			for (let i = 0; i < outlineAIterations; i++) {
+				// Swap target framebuffer.
+				let nextFrameBufferTex;
+				if (currFrameBufferTex === this._frameBufferTex) {
+					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
+					nextFrameBufferTex = this._frameBufferTex2;
+				} else {
+					gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer);
+					nextFrameBufferTex = this._frameBufferTex;
+				}
+
+				// Draw to framebuffer.
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+				gl.uniform1i(outlineProgram.locations.mainTex, 0);
+
+				gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+				// Finalize swap.
+				currFrameBufferTex = nextFrameBufferTex;
+			}
+		}
+
+		// Second outline.
+		if (outlineBIterations > 0) {
+			let outlineProgram = this._programOutline;
+
+			outlineProgram.program.use();
+
+			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
+			gl.uniform4f(outlineProgram.locations.outlineColor, this.outline.colorB[0], this.outline.colorB[1], this.outline.colorB[2], this.outline.colorB[3] ?? 1);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(
+				outlineProgram.program.vertexLocation,
+				2,
+				gl.FLOAT,
+				false,
+				0,
+				0,
+			);
+			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
+
+			for (let i = 0; i < outlineBIterations; i++) {
 				// Swap target framebuffer.
 				let nextFrameBufferTex;
 				if (currFrameBufferTex === this._frameBufferTex) {
@@ -1467,7 +1518,8 @@ export class PicoCADViewer {
 			if (!pass.isEmpty()) count++;
 		}
 		if (this.drawWireframe) count++;
-		count += this.outlineSize;
+		count += this.outline.size;
+		count += this.outline.size2;
 		return count;
 	}
 

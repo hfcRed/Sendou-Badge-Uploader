@@ -59,22 +59,39 @@
 <hr />
 <h3>Effects</h3>
 <fieldset>
-	<legend><h4>Outline</h4></legend>
+	<legend><h4>Outlines</h4></legend>
 	<NumericControl
-		label={'Outline Width'}
+		label={'First Width'}
 		min={0}
 		max={25}
 		step={1}
-		bind:value={viewer.shader.outlineWidth}
-		oninput={(e) => (viewer.pico.outlineSize = parseFloat(e.currentTarget.value))}
+		bind:value={viewer.shader.outline.sizeA}
+		oninput={(e) => (viewer.pico.outline.sizeA = parseFloat(e.currentTarget.value))}
 	/>
 	<label>
-		Outline Color
+		First Color
 		<input
 			type="color"
-			bind:value={viewer.shader.outlineColor}
-			oninput={(e) => (viewer.pico.outlineColor = hexToRGB(e.currentTarget.value))}
-			disabled={viewer.shader.outlineWidth <= 0}
+			bind:value={viewer.shader.outline.colorA}
+			oninput={(e) => (viewer.pico.outline.colorA = hexToRGB(e.currentTarget.value))}
+			disabled={viewer.shader.outline.sizeA <= 0}
+		/>
+	</label>
+	<NumericControl
+		label={'Second Width'}
+		min={0}
+		max={25}
+		step={1}
+		bind:value={viewer.shader.outline.sizeB}
+		oninput={(e) => (viewer.pico.outline.sizeB = parseFloat(e.currentTarget.value))}
+	/>
+	<label>
+		Second Color
+		<input
+			type="color"
+			bind:value={viewer.shader.outline.colorB}
+			oninput={(e) => (viewer.pico.outline.colorB = hexToRGB(e.currentTarget.value))}
+			disabled={viewer.shader.outline.sizeB <= 0}
 		/>
 	</label>
 </fieldset>
