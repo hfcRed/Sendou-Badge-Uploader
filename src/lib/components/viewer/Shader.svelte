@@ -181,7 +181,7 @@
 	</label>
 </fieldset>
 <hr />
-<fieldset class="tighten">
+<fieldset>
 	<legend><h4>Chromatic Aberration</h4></legend>
 	<NumericControl
 		label={'Strength'}
