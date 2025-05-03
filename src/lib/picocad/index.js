@@ -210,7 +210,12 @@ export class PicoCADViewer {
 		this.hdOptions = {
 			shadingSteps: 4,
 			shadingColor: [0.1, 0.1, 0.1],
-			normalMapStrength: 1.0,  // Control the intensity of normal mapping
+			normalMapStrength: 1.0,
+			specular: {
+				strength: 0.0,
+				smoothness: 10.0,
+				color: [1.0, 1.0, 1.0],
+			},
 		};
 
 		/** @private @type {Pass[]} */
@@ -1174,6 +1179,12 @@ export class PicoCADViewer {
 					gl.uniform1f(programInfo.locations.lightSteps, this.hdOptions.shadingSteps);
 					gl.uniform3f(programInfo.locations.lightAmbient, this.hdOptions.shadingColor[0], this.hdOptions.shadingColor[1], this.hdOptions.shadingColor[2]);
 
+					// Specular options
+					const spec = this.hdOptions.specular ?? { strength: 1.0, smoothness: 32.0, color: [1, 1, 1] };
+					gl.uniform1f(programInfo.locations.specularStrength, spec.strength);
+					gl.uniform1f(programInfo.locations.specularSmoothness, spec.smoothness);
+					gl.uniform3f(programInfo.locations.specularColor, spec.color[0], spec.color[1], spec.color[2]);
+
 					// Normal attrib
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.normalBuffer);
 					gl.vertexAttribPointer(
@@ -2110,8 +2121,13 @@ function createHDTextureProgram(gl) {
 		uniform sampler2D normalMap;
 		uniform highp vec3 lightDir;
 		uniform highp vec3 lightAmbient;
-		uniform highp float normalMapStrength;
+
 		uniform bool useNormalMap;
+		uniform highp float normalMapStrength;
+
+		uniform highp float specularStrength;
+		uniform highp float specularSmoothness;
+		uniform highp vec3 specularColor;
 
 		void main() {
 			highp vec4 col = texture2D(mainTex, v_uv);
@@ -2131,7 +2147,11 @@ function createHDTextureProgram(gl) {
 			highp float intensity = abs(dot(normalVector, lightDir)) * 2.2 - 0.2;
 			intensity = floor(intensity * (lightSteps + 0.5) + pixel/2.0) / lightSteps;
 			intensity = clamp(intensity, 0.0, 1.0);
-			gl_FragColor = vec4(mix(col.rgb * lightAmbient, col.rgb, intensity), 1.0);
+
+			highp float spec = pow(max(dot(normalVector, vec3(lightDir.x, -1.0, lightDir.z)), 0.0), specularSmoothness);
+			highp vec3 specular = specularColor * spec * specularStrength;
+
+			gl_FragColor = vec4(mix(col.rgb * lightAmbient, col.rgb, intensity) + specular, 1.0);
 		}
 	`);
 
@@ -2148,6 +2168,9 @@ function createHDTextureProgram(gl) {
 			lightDir: program.getUniformLocation("lightDir"),
 			normalMapStrength: program.getUniformLocation("normalMapStrength"),
 			useNormalMap: program.getUniformLocation("useNormalMap"),
+			specularStrength: program.getUniformLocation("specularStrength"),
+			specularSmoothness: program.getUniformLocation("specularSmoothness"),
+			specularColor: program.getUniformLocation("specularColor"),
 		}
 	};
 }

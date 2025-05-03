@@ -30,6 +30,7 @@
 		Shading
 	</label>
 </fieldset>
+<hr />
 <fieldset disabled={!viewer.shader.usingHDTexture}>
 	<legend><h4>HD Texture</h4></legend>
 	<NumericControl
@@ -241,5 +242,30 @@
 		step={0.01}
 		bind:value={viewer.shader.chromaticAberration.centerY}
 		oninput={(e) => (viewer.pico.chromaticAberration.centerY = parseFloat(e.currentTarget.value))}
+	/>
+</fieldset>
+<h3>HD Effects</h3>
+<fieldset disabled={!viewer.shader.usingHDTexture}>
+	<legend><h4>Specular Reflection</h4></legend>
+	<NumericControl
+		label={'Strength'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.specular.strength}
+		oninput={(e) => (viewer.pico.hdOptions.specular.strength = parseFloat(e.currentTarget.value))}
+	/>
+	<NumericControl
+		label={'Smoothness'}
+		min={0}
+		max={100}
+		step={0.01}
+		bind:value={viewer.shader.specular.smoothness}
+		oninput={(e) => (viewer.pico.hdOptions.specular.smoothness = parseFloat(e.currentTarget.value))}
+	/>
+	<input
+		type="color"
+		bind:value={viewer.shader.specular.color}
+		oninput={(e) => (viewer.pico.hdOptions.specular.color = hexToRGB(e.currentTarget.value))}
 	/>
 </fieldset>

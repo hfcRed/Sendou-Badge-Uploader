@@ -102,6 +102,11 @@ export class Viewer {
 			radialFalloff: 1.5,
 			centerX: 0,
 			centerY: 0
+		},
+		specular: {
+			strength: 0,
+			smoothness: 10,
+			color: '#ffffff'
 		}
 	});
 
