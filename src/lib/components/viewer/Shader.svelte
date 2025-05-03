@@ -5,8 +5,9 @@
 	import NumericControl from '../NumericControl.svelte';
 </script>
 
+<h3>Rendering</h3>
 <fieldset>
-	<legend><h3>Rendering</h3></legend>
+	<legend><h4>Basic</h4></legend>
 	<label>
 		Render Mode
 		<select
@@ -19,7 +20,7 @@
 			<option>None</option>
 		</select>
 	</label>
-	<label class="form-margin">
+	<label>
 		<input
 			type="checkbox"
 			role="switch"
@@ -28,33 +29,33 @@
 		/>
 		Shading
 	</label>
-	<fieldset disabled={!viewer.shader.usingHDTexture}>
-		<legend><h4>HD Texture</h4></legend>
-		<NumericControl
-			label={'Shading Steps'}
-			min={0}
-			max={25}
-			step={1}
-			bind:value={viewer.shader.hdShadingSteps}
-			oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
+</fieldset>
+<fieldset disabled={!viewer.shader.usingHDTexture}>
+	<legend><h4>HD Texture</h4></legend>
+	<NumericControl
+		label={'Shading Steps'}
+		min={0}
+		max={25}
+		step={1}
+		bind:value={viewer.shader.hdShadingSteps}
+		oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
+	/>
+	<label>
+		Shading Color
+		<input
+			type="color"
+			bind:value={viewer.shader.hdShadingColor}
+			oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
 		/>
-		<label>
-			Shading Color
-			<input
-				type="color"
-				bind:value={viewer.shader.hdShadingColor}
-				oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
-			/>
-		</label>
-		<NumericControl
-			label={'Normal Map Strength'}
-			min={0}
-			max={1}
-			step={0.01}
-			bind:value={viewer.shader.normalStrength}
-			oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
-		/>
-	</fieldset>
+	</label>
+	<NumericControl
+		label={'Normal Map Strength'}
+		min={0}
+		max={1}
+		step={0.01}
+		bind:value={viewer.shader.normalStrength}
+		oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
+	/>
 </fieldset>
 <hr />
 <h3>Effects</h3>
@@ -242,13 +243,3 @@
 		oninput={(e) => (viewer.pico.chromaticAberration.centerY = parseFloat(e.currentTarget.value))}
 	/>
 </fieldset>
-
-<style>
-	.form-margin {
-		margin-bottom: 1.5rem;
-	}
-
-	fieldset > fieldset {
-		margin-bottom: 0;
-	}
-</style>
