@@ -19,6 +19,9 @@
 		viewer.init(viewportCanvas, textureCanvas, normalMapCanvas, lightmapCanvas);
 
 		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.ctrlKey || e.metaKey) return;
+			if (e.target !== document.body) return;
+
 			if (e.key === '1') {
 				tab = 'viewport';
 			} else if (e.key === '2') {
