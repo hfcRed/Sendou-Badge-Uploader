@@ -1,7 +1,6 @@
 import { mat4 } from "gl-matrix";
 import { vec3 } from "gl-matrix";
 import { prepareModelForRendering } from "./model-gl-loader";
-import { Pass, WirePass } from "./pass";
 import { PICO_COLORS } from "./pico";
 import { ShaderProgram } from "./shader-program";
 import { createLightMap } from "./lighting";
@@ -703,7 +702,7 @@ export class PicoCADViewer {
 				for (let cs of s) {
 					let byte = 32;
 
-					if (charToByte.hasOwnProperty(cs)) {
+					if (Object.prototype.hasOwnProperty.call(charToByte, cs)) {
 						byte = charToByte[cs];
 					} else if (cs.length === 1) {
 						let code = cs.charCodeAt(0);
@@ -725,11 +724,9 @@ export class PicoCADViewer {
 							byte = 154;
 
 							// Account for Katakana
-							let isHiragana = true;
 							if (code >= 0x30a0) {
 								code -= 96;
 								byte = 204;
-								isHiragana = false;
 							}
 
 							if (code <= 0x304A) {
@@ -1754,7 +1751,7 @@ export class PicoCADViewer {
 	 * The number of colors used in the texture.
 	 * (There may more used by face colors.)
 	 */
-	getTextureColorCount(includeAlpha = false) {
+	getTextureColorCount() {
 		/** @type {boolean[]} */
 		const flags = Array(16).fill(false);
 		let count = 0;
