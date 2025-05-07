@@ -1319,6 +1319,10 @@ export class PicoCADViewer {
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
+		// Double swap to allow watermark to draw even if no postprocessing is applied
+		currFrameBufferTex = swapFB();
+		currFrameBufferTex = swapFB();
+
 		// First outline.
 		if (this.outlineA.enabled) {
 			let outlineProgram = this._programOutline;
