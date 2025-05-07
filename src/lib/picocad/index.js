@@ -3002,7 +3002,7 @@ function createLensDistortionProgram(gl) {
 			highp vec2 sampleUV = (distorted + 1.0) * 0.5;
 
 			if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
-				gl_FragColor = vec4(0.0,0.0,0.0,1.0);
+				gl_FragColor = vec4(0.0,0.0,0.0,0.0);
 			} else {
 				gl_FragColor = texture2D(mainTex, sampleUV);
 			}
