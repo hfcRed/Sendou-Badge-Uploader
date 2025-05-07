@@ -92,6 +92,9 @@ interface ShaderSettings {
 	posterize: {
 		enabled: boolean;
 		levels: number;
+		channelLevels: [number, number, number];
+		gamma: number;
+		colorBanding: boolean;
 	};
 	noise: {
 		enabled: boolean;
@@ -194,7 +197,10 @@ export class Viewer {
 		},
 		posterize: {
 			enabled: false,
-			levels: 3
+			levels: 4,
+			channelLevels: [1, 1, 1],
+			gamma: 1.0,
+			colorBanding: false
 		},
 		noise: {
 			enabled: false,

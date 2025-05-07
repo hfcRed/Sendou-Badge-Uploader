@@ -148,11 +148,20 @@ export class PicoCADViewer {
 		};
 		/**
 		 * Posterize options.
-		 * @type {{enabled: boolean, levels: number}}
+		 * @type {{
+		 *   enabled: boolean, 
+		 *   levels: number,
+		 *   channelLevels: number[],
+		 *   gamma: number,
+		 *   colorBanding: boolean
+		 * }}
 		 */
 		this.posterize = {
 			enabled: false,
-			levels: 3,
+			levels: 4,
+			channelLevels: [1.0, 1.0, 1.0],
+			gamma: 1.0,
+			colorBanding: false
 		};
 		/**
 		 * Noise options.
@@ -1468,6 +1477,9 @@ export class PicoCADViewer {
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
 			gl.uniform1f(prog.locations.levels, this.posterize.levels);
+			gl.uniform3fv(prog.locations.channelLevels, this.posterize.channelLevels);
+			gl.uniform1f(prog.locations.gamma, this.posterize.gamma);
+			gl.uniform1i(prog.locations.colorBanding, this.posterize.colorBanding);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -2615,30 +2627,51 @@ function createColorGradeProgram(gl) {
  */
 function createPosterizeProgram(gl) {
 	const program = new ShaderProgram(gl, `
-		attribute vec4 vertex;
-		varying highp vec2 v_uv;
-		void main() {
-			v_uv = 0.5 + vertex.xy * 0.5;
-			gl_Position = vertex;
-		}
-	`, `
-		varying highp vec2 v_uv;
+        attribute vec4 vertex;
+        varying highp vec2 v_uv;
+        void main() {
+            v_uv = 0.5 + vertex.xy * 0.5;
+            gl_Position = vertex;
+        }
+    `, `
+        varying highp vec2 v_uv;
 
-		uniform sampler2D mainTex;
-		uniform highp float levels;
+        uniform sampler2D mainTex;
+        uniform highp float levels;
+        uniform highp vec3 channelLevels;
+        uniform highp float gamma;
+        uniform bool colorBanding;
 
-		void main() {
-			highp vec4 col = texture2D(mainTex, v_uv);
+        void main() {
+            highp vec4 col = texture2D(mainTex, v_uv);
+            highp vec3 originalColor = col.rgb;
+            
+            col.rgb = pow(col.rgb, vec3(gamma));
+            
+            highp vec3 effectiveLevels = vec3(levels) * channelLevels;
+            if (colorBanding) {
+                col.r = floor(col.r * effectiveLevels.r + 0.25) / (effectiveLevels.r - 1.0);
+                col.g = floor(col.g * effectiveLevels.g + 0.5) / (effectiveLevels.g - 1.0);
+                col.b = floor(col.b * effectiveLevels.b + 0.75) / (effectiveLevels.b - 1.0);
+            } else {
+                col.rgb = floor(col.rgb * effectiveLevels) / (effectiveLevels - 1.0);
+            }
+            
+            col.rgb = pow(col.rgb, vec3(1.0/gamma));
+            
+            gl_FragColor = col;
+        }
+    `);
 
-			col.rgb = floor(col.rgb * levels) / (levels - 1.0);
-			gl_FragColor = col;
-		}
-	`);
 	return {
 		program: program,
 		locations: {
 			mainTex: program.getUniformLocation("mainTex"),
 			levels: program.getUniformLocation("levels"),
+			channelLevels: program.getUniformLocation("channelLevels"),
+			gamma: program.getUniformLocation("gamma"),
+			edgePreserve: program.getUniformLocation("edgePreserve"),
+			colorBanding: program.getUniformLocation("colorBanding")
 		}
 	};
 }

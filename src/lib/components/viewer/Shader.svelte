@@ -346,11 +346,61 @@
 		<NumericControl
 			label={'Levels'}
 			min={2}
-			max={16}
+			max={10}
 			step={1}
 			bind:value={viewer.shader.posterize.levels}
 			oninput={(e) => (viewer.pico.posterize.levels = parseFloat(e.currentTarget.value))}
 		/>
+		<NumericControl
+			label={'Red Levels'}
+			min={0}
+			max={5}
+			step={0.01}
+			bind:value={viewer.shader.posterize.channelLevels[0]}
+			oninput={(e) => {
+				viewer.shader.posterize.channelLevels[0] = parseFloat(e.currentTarget.value);
+				viewer.pico.posterize.channelLevels = [...viewer.shader.posterize.channelLevels];
+			}}
+		/>
+		<NumericControl
+			label={'Green Levels'}
+			min={0}
+			max={5}
+			step={0.01}
+			bind:value={viewer.shader.posterize.channelLevels[1]}
+			oninput={(e) => {
+				viewer.shader.posterize.channelLevels[1] = parseFloat(e.currentTarget.value);
+				viewer.pico.posterize.channelLevels = [...viewer.shader.posterize.channelLevels];
+			}}
+		/>
+		<NumericControl
+			label={'Blue Levels'}
+			min={0}
+			max={5}
+			step={0.01}
+			bind:value={viewer.shader.posterize.channelLevels[2]}
+			oninput={(e) => {
+				viewer.shader.posterize.channelLevels[2] = parseFloat(e.currentTarget.value);
+				viewer.pico.posterize.channelLevels = [...viewer.shader.posterize.channelLevels];
+			}}
+		/>
+		<NumericControl
+			label={'Gamma'}
+			min={0}
+			max={5}
+			step={0.01}
+			bind:value={viewer.shader.posterize.gamma}
+			oninput={(e) => (viewer.pico.posterize.gamma = parseFloat(e.currentTarget.value))}
+		/>
+		<label class="form-margin">
+			<input
+				type="checkbox"
+				role="switch"
+				bind:checked={viewer.shader.posterize.colorBanding}
+				oninput={(e) => (viewer.pico.posterize.colorBanding = e.currentTarget.checked)}
+			/>
+			Color Banding
+		</label>
 	{/if}
 </fieldset>
 <hr />
@@ -504,6 +554,7 @@
 			<input
 				type="checkbox"
 				bind:checked={viewer.shader.lensDistortion.enabled}
+				aria-checked={viewer.shader.lensDistortion.enabled}
 				oninput={(e) => (viewer.pico.lensDistortion.enabled = e.currentTarget.checked)}
 			/>
 			<h4>Lens Distortion</h4>
