@@ -82,6 +82,45 @@ interface ShaderSettings {
 		centerX: number;
 		centerY: number;
 	};
+	colorGrading: {
+		enabled: boolean;
+		brightness: number;
+		contrast: number;
+		saturation: number;
+		hue: number;
+	};
+	posterize: {
+		enabled: boolean;
+		levels: number;
+	};
+	noise: {
+		enabled: boolean;
+		amount: number;
+	};
+	bloom: {
+		enabled: boolean;
+		threshold: number;
+		intensity: number;
+		blur: number;
+	};
+	dither: {
+		enabled: boolean;
+		amount: number;
+	};
+	crt: {
+		enabled: boolean;
+		curvature: number;
+		scanlineIntensity: number;
+	};
+	pixelate: {
+		enabled: boolean;
+		pixelSize: number;
+	};
+	lensDistortion: {
+		enabled: boolean;
+		strength: number;
+		zoom: number;
+	};
 }
 
 type ViewerSettings = ViewportSettings & ShaderSettings & { name: string };
@@ -145,6 +184,45 @@ export class Viewer {
 			radialFalloff: 1.5,
 			centerX: 0,
 			centerY: 0
+		},
+		colorGrading: {
+			enabled: false,
+			brightness: 1.0,
+			contrast: 1.0,
+			saturation: 1.0,
+			hue: 1.0
+		},
+		posterize: {
+			enabled: false,
+			levels: 3
+		},
+		noise: {
+			enabled: false,
+			amount: 0.05
+		},
+		bloom: {
+			enabled: false,
+			threshold: 0.7,
+			intensity: 0.5,
+			blur: 1.0
+		},
+		dither: {
+			enabled: false,
+			amount: 0.5
+		},
+		crt: {
+			enabled: false,
+			curvature: 0.5,
+			scanlineIntensity: 0.3
+		},
+		pixelate: {
+			enabled: false,
+			pixelSize: 1
+		},
+		lensDistortion: {
+			enabled: false,
+			strength: 1.0,
+			zoom: 2.0
 		}
 	});
 
@@ -447,6 +525,14 @@ export class Viewer {
 		};
 
 		this.pico.chromaticAberration = { ...data.chromaticAberration };
+		this.pico.colorGrading = { ...data.colorGrading };
+		this.pico.posterize = { ...data.posterize };
+		this.pico.noise = { ...data.noise };
+		this.pico.bloom = { ...data.bloom };
+		this.pico.dither = { ...data.dither };
+		this.pico.crt = { ...data.crt };
+		this.pico.pixelate = { ...data.pixelate };
+		this.pico.lensDistortion = { ...data.lensDistortion };
 	}
 
 	private addEventListeners() {

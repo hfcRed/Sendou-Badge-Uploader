@@ -136,58 +136,75 @@ export class PicoCADViewer {
 		};
 
 		/**
-		 * Options for post-processing effects.
-		 * @type {{
-		 * 	 colorGrading: {enabled: boolean, brightness: number, contrast: number, saturation: number, hue: number},
-		 * 	 posterize: {enabled: boolean, levels: number},
-		 * 	 noise: {enabled: boolean, amount: number},
-		 * 	 bloom: {enabled: boolean, threshold: number, intensity: number, blur: number},
-		 * 	 dither: {enabled: boolean, amount: number},
-		 * 	 crt: {enabled: boolean, curvature: number, scanlineIntensity: number},
-		 * 	 pixelate: {enabled: boolean, pixelSize: number},
-		 * 	 lensDistortion: {enabled: boolean, strength: number, zoom: number}
-		 * }}
+		 * Color grading options.
+		 * @type {{enabled: boolean, brightness: number, contrast: number, saturation: number, hue: number}}
 		 */
-		this.postProcessing = {
-			colorGrading: {
-				enabled: false,
-				brightness: 1.0,
-				contrast: 1.0,
-				saturation: 1.0,
-				hue: 1.0,
-			},
-			posterize: {
-				enabled: false,
-				levels: 3,
-			},
-			noise: {
-				enabled: false,
-				amount: 0.05,
-			},
-			bloom: {
-				enabled: false,
-				threshold: 0.7,
-				intensity: 0.5,
-				blur: 1.0,
-			},
-			dither: {
-				enabled: false,
-				amount: 0.5,
-			},
-			crt: {
-				enabled: false,
-				curvature: 0.5,
-				scanlineIntensity: 0.3,
-			},
-			pixelate: {
-				enabled: false,
-				pixelSize: 1,
-			},
-			lensDistortion: {
-				enabled: false,
-				strength: 1.0,
-				zoom: 2.0,
-			},
+		this.colorGrading = {
+			enabled: false,
+			brightness: 1.0,
+			contrast: 1.0,
+			saturation: 1.0,
+			hue: 1.0,
+		};
+		/**
+		 * Posterize options.
+		 * @type {{enabled: boolean, levels: number}}
+		 */
+		this.posterize = {
+			enabled: false,
+			levels: 3,
+		};
+		/**
+		 * Noise options.
+		 * @type {{enabled: boolean, amount: number}}
+		 */
+		this.noise = {
+			enabled: false,
+			amount: 0.05,
+		};
+		/**
+		 * Bloom options.
+		 * @type {{enabled: boolean, threshold: number, intensity: number, blur: number}}
+		 */
+		this.bloom = {
+			enabled: false,
+			threshold: 0.7,
+			intensity: 0.5,
+			blur: 1.0,
+		};
+		/**
+		 * Dither options.
+		 * @type {{enabled: boolean, amount: number}}
+		 */
+		this.dither = {
+			enabled: false,
+			amount: 0.5,
+		};
+		/**
+		 * CRT options.
+		 * @type {{enabled: boolean, curvature: number, scanlineIntensity: number}}
+		 */
+		this.crt = {
+			enabled: false,
+			curvature: 0.5,
+			scanlineIntensity: 0.3,
+		};
+		/**
+		 * Pixelate options.
+		 * @type {{enabled: boolean, pixelSize: number}}
+		 */
+		this.pixelate = {
+			enabled: false,
+			pixelSize: 1,
+		};
+		/**
+		 * Lens distortion options.
+		 * @type {{enabled: boolean, strength: number, zoom: number}}
+		 */
+		this.lensDistortion = {
+			enabled: false,
+			strength: 1.0,
+			zoom: 2.0,
 		};
 
 		/**
@@ -1417,7 +1434,7 @@ export class PicoCADViewer {
 		}
 
 		// Color grading/adjustment
-		if (this.postProcessing.colorGrading.enabled) {
+		if (this.colorGrading.enabled) {
 			let prog = this._programColorGrade;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1425,10 +1442,10 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.brightness, this.postProcessing.colorGrading.brightness);
-			gl.uniform1f(prog.locations.contrast, this.postProcessing.colorGrading.contrast);
-			gl.uniform1f(prog.locations.saturation, this.postProcessing.colorGrading.saturation);
-			gl.uniform1f(prog.locations.hue, this.postProcessing.colorGrading.hue);
+			gl.uniform1f(prog.locations.brightness, this.colorGrading.brightness);
+			gl.uniform1f(prog.locations.contrast, this.colorGrading.contrast);
+			gl.uniform1f(prog.locations.saturation, this.colorGrading.saturation);
+			gl.uniform1f(prog.locations.hue, this.colorGrading.hue);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -1439,7 +1456,7 @@ export class PicoCADViewer {
 		}
 
 		// Posterization
-		if (this.postProcessing.posterize.enabled) {
+		if (this.posterize.enabled) {
 			let prog = this._programPosterize;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1447,7 +1464,7 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.levels, this.postProcessing.posterize.levels);
+			gl.uniform1f(prog.locations.levels, this.posterize.levels);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -1458,7 +1475,7 @@ export class PicoCADViewer {
 		}
 
 		// Noise/film grain
-		if (this.postProcessing.noise.enabled) {
+		if (this.noise.enabled) {
 			let prog = this._programNoise;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1466,8 +1483,8 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.amount, this.postProcessing.noise.amount);
-			gl.uniform1f(prog.locations.time, performance.now() / 1000);
+			gl.uniform1f(prog.locations.amount, this.noise.amount);
+			gl.uniform1f(prog.locations.time, performance.now() / 10000);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -1478,7 +1495,7 @@ export class PicoCADViewer {
 		}
 
 		// Bloom/glow
-		if (this.postProcessing.bloom.enabled) {
+		if (this.bloom.enabled) {
 			let prog = this._programBloom;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1486,9 +1503,9 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.threshold, this.postProcessing.bloom.threshold);
-			gl.uniform1f(prog.locations.intensity, this.postProcessing.bloom.intensity);
-			gl.uniform1f(prog.locations.blur, this.postProcessing.bloom.blur);
+			gl.uniform1f(prog.locations.threshold, this.bloom.threshold);
+			gl.uniform1f(prog.locations.intensity, this.bloom.intensity);
+			gl.uniform1f(prog.locations.blur, this.bloom.blur);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1500,7 +1517,7 @@ export class PicoCADViewer {
 		}
 
 		// Dithering
-		if (this.postProcessing.dither.enabled) {
+		if (this.dither.enabled) {
 			let prog = this._programDither;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1508,7 +1525,7 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.amount, this.postProcessing.dither.amount);
+			gl.uniform1f(prog.locations.amount, this.dither.amount);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1520,7 +1537,7 @@ export class PicoCADViewer {
 		}
 
 		// CRT
-		if (this.postProcessing.crt.enabled) {
+		if (this.crt.enabled) {
 			let prog = this._programCRT;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1528,8 +1545,8 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.curvature, this.postProcessing.crt.curvature);
-			gl.uniform1f(prog.locations.scanlineIntensity, this.postProcessing.crt.scanlineIntensity);
+			gl.uniform1f(prog.locations.curvature, this.crt.curvature);
+			gl.uniform1f(prog.locations.scanlineIntensity, this.crt.scanlineIntensity);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1541,7 +1558,7 @@ export class PicoCADViewer {
 		}
 
 		// Pixelation
-		if (this.postProcessing.pixelate.enabled) {
+		if (this.pixelate.enabled) {
 			let prog = this._programPixelate;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1549,7 +1566,7 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.pixelSize, this.postProcessing.pixelate.pixelSize);
+			gl.uniform1f(prog.locations.pixelSize, this.pixelate.pixelSize);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1561,7 +1578,7 @@ export class PicoCADViewer {
 		}
 
 		// Lens Distortion
-		if (this.postProcessing.lensDistortion && this.postProcessing.lensDistortion.enabled) {
+		if (this.lensDistortion && this.lensDistortion.enabled) {
 			let prog = this._programLensDistortion;
 			prog.program.use();
 			let nextTex = swapFB();
@@ -1569,8 +1586,8 @@ export class PicoCADViewer {
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
 			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.strength, this.postProcessing.lensDistortion.strength);
-			gl.uniform1f(prog.locations.zoom, this.postProcessing.lensDistortion.zoom);
+			gl.uniform1f(prog.locations.strength, this.lensDistortion.strength);
+			gl.uniform1f(prog.locations.zoom, this.lensDistortion.zoom);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);

@@ -281,6 +281,253 @@
 		/>
 	{/if}
 </fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.colorGrading.enabled}
+				aria-checked={viewer.shader.colorGrading.enabled}
+				oninput={(e) => (viewer.pico.colorGrading.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Color Grading</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.colorGrading.enabled}
+		<NumericControl
+			label={'Brightness'}
+			min={0}
+			max={3}
+			step={0.01}
+			bind:value={viewer.shader.colorGrading.brightness}
+			oninput={(e) => (viewer.pico.colorGrading.brightness = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Contrast'}
+			min={0}
+			max={3}
+			step={0.01}
+			bind:value={viewer.shader.colorGrading.contrast}
+			oninput={(e) => (viewer.pico.colorGrading.contrast = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Saturation'}
+			min={0}
+			max={3}
+			step={0.01}
+			bind:value={viewer.shader.colorGrading.saturation}
+			oninput={(e) => (viewer.pico.colorGrading.saturation = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Hue'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.colorGrading.hue}
+			oninput={(e) => (viewer.pico.colorGrading.hue = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.posterize.enabled}
+				aria-checked={viewer.shader.posterize.enabled}
+				oninput={(e) => (viewer.pico.posterize.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Posterize</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.posterize.enabled}
+		<NumericControl
+			label={'Levels'}
+			min={2}
+			max={16}
+			step={1}
+			bind:value={viewer.shader.posterize.levels}
+			oninput={(e) => (viewer.pico.posterize.levels = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.noise.enabled}
+				aria-checked={viewer.shader.noise.enabled}
+				oninput={(e) => (viewer.pico.noise.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Noise</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.noise.enabled}
+		<NumericControl
+			label={'Amount'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.noise.amount}
+			oninput={(e) => (viewer.pico.noise.amount = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.bloom.enabled}
+				aria-checked={viewer.shader.bloom.enabled}
+				oninput={(e) => (viewer.pico.bloom.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Bloom</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.bloom.enabled}
+		<NumericControl
+			label={'Threshold'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.bloom.threshold}
+			oninput={(e) => (viewer.pico.bloom.threshold = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Intensity'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.bloom.intensity}
+			oninput={(e) => (viewer.pico.bloom.intensity = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Blur'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.bloom.blur}
+			oninput={(e) => (viewer.pico.bloom.blur = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.dither.enabled}
+				aria-checked={viewer.shader.dither.enabled}
+				oninput={(e) => (viewer.pico.dither.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Dither</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.dither.enabled}
+		<NumericControl
+			label={'Amount'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.dither.amount}
+			oninput={(e) => (viewer.pico.dither.amount = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.crt.enabled}
+				aria-checked={viewer.shader.crt.enabled}
+				oninput={(e) => (viewer.pico.crt.enabled = e.currentTarget.checked)}
+			/>
+			<h4>CRT</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.crt.enabled}
+		<NumericControl
+			label={'Curvature'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.crt.curvature}
+			oninput={(e) => (viewer.pico.crt.curvature = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Scanline Intensity'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.crt.scanlineIntensity}
+			oninput={(e) => (viewer.pico.crt.scanlineIntensity = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.pixelate.enabled}
+				aria-checked={viewer.shader.pixelate.enabled}
+				oninput={(e) => (viewer.pico.pixelate.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Pixelate</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.pixelate.enabled}
+		<NumericControl
+			label={'Pixel Size'}
+			min={1}
+			max={32}
+			step={1}
+			bind:value={viewer.shader.pixelate.pixelSize}
+			oninput={(e) => (viewer.pico.pixelate.pixelSize = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.lensDistortion.enabled}
+				oninput={(e) => (viewer.pico.lensDistortion.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Lens Distortion</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.lensDistortion.enabled}
+		<NumericControl
+			label={'Strength'}
+			min={-2}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.lensDistortion.strength}
+			oninput={(e) => (viewer.pico.lensDistortion.strength = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Zoom'}
+			min={0.1}
+			max={5}
+			step={0.01}
+			bind:value={viewer.shader.lensDistortion.zoom}
+			oninput={(e) => (viewer.pico.lensDistortion.zoom = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
 <h3>HD Effects</h3>
 <fieldset disabled={!viewer.shader.usingHDTexture}>
 	<legend>
