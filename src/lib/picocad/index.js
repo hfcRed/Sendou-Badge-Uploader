@@ -74,34 +74,47 @@ export class PicoCADViewer {
 		/**
 		 * Outline options.
 		 * @type {{
-		 *   sizeA: number,
-		 *   colorA: number[],
-		 *   colorA2: number[],
-		 *   gradientA: number,
-		 *   gradientDirectionA: number,
-		 *   sizeB: number,
-		 *   colorB: number[],
-		 *   colorB2: number[],
-		 *   gradientB: number,
-		 *   gradientDirectionB: number
+		 *   enabled: boolean,
+		 *   size: number,
+		 *   colorFrom: number[],
+		 *   colorTo: number[],
+		 *   gradient: number,
+		 *   gradientDirection: number,
 		 * }}
 		 */
-		this.outline = {
-			sizeA: 0,
-			colorA: [1, 1, 1, 1],
-			colorA2: [1, 1, 1, 1],
-			gradientA: 0,
-			gradientDirectionA: 0,
-			sizeB: 0,
-			colorB: [1, 1, 1, 1],
-			colorB2: [1, 1, 1, 1],
-			gradientB: 0,
-			gradientDirectionB: 0,
+		this.outlineA = {
+			enabled: false,
+			size: 0,
+			colorFrom: [1, 1, 1],
+			colorTo: [1, 1, 1],
+			gradient: 0,
+			gradientDirection: 0,
+		};
+
+		/**
+		 * Outline options.
+		 * @type {{
+		 *   enabled: boolean,
+		 *   size: number,
+		 *   colorFrom: number[],
+		 *   colorTo: number[],
+		 *   gradient: number,
+		 *   gradientDirection: number,
+		 * }}
+		 */
+		this.outlineB = {
+			enabled: false,
+			size: 0,
+			colorFrom: [1, 1, 1],
+			colorTo: [1, 1, 1],
+			gradient: 0,
+			gradientDirection: 0,
 		};
 
 		/**
 		 * Options for the chromatic aberration effect.
 		 * @type {{
+		 *   enabled: boolean,
 		 *   strength: number,
 		 *   redOffset: number,
 		 *   greenOffset: number,
@@ -112,13 +125,14 @@ export class PicoCADViewer {
 		 * }}
 		 */
 		this.chromaticAberration = {
+			enabled: false,
 			strength: 0,
-			redOffset: 1.0,
-			greenOffset: 0.0,
-			blueOffset: 1.0,
-			radialFalloff: 2.0,
-			centerX: 0.5,
-			centerY: 0.5
+			redOffset: 1,
+			greenOffset: 0,
+			blueOffset: -1,
+			radialFalloff: 1.5,
+			centerX: 0,
+			centerY: 0
 		};
 
 		/**
@@ -208,9 +222,10 @@ export class PicoCADViewer {
 		/** Set the options for the HD texture shader. */
 		this.hdOptions = {
 			shadingSteps: 4,
-			shadingColor: [0.1, 0.1, 0.1],
-			normalMapStrength: 1.0,
+			shadingColor: [0, 0, 0],
+			normalMapStrength: 0.5,
 			specular: {
+				enabled: false,
 				strength: 0.0,
 				smoothness: 10.0,
 				color: [1.0, 1.0, 1.0],
@@ -418,13 +433,13 @@ export class PicoCADViewer {
 		}
 
 		// Add custom outlines.
-		if (this.outline.size >= 1) {
-			const outline = rgb01to255(this.outline.color);
+		if (this.outlineA.enabled) {
+			const outline = rgb01to255(this.outlineA.color);
 			if (outline.length != 4) outline.push(255);
 			colors.push(outline);
 		}
-		if (this.outline.size2 >= 1) {
-			const outline2 = rgb01to255(this.outline.color2);
+		if (this.outlineB.enabled) {
+			const outline2 = rgb01to255(this.outlineA.color2);
 			if (outline2.length != 4) outline2.push(255);
 			colors.push(outline2);
 		}
@@ -1259,9 +1274,6 @@ export class PicoCADViewer {
 
 		// Postprocessing.
 		let currFrameBufferTex = this._frameBufferTex;
-		let outlineAIterations = this.outline.sizeA;
-		let outlineBIterations = this.outline.sizeB;
-		let doChromaticAberration = this.chromaticAberration.strength > 0;
 
 		const swapFB = () => {
 			let nextFrameBufferTex;
@@ -1279,19 +1291,20 @@ export class PicoCADViewer {
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		// First outline.
-		if (outlineAIterations > 0) {
+		if (this.outlineA.enabled) {
 			let outlineProgram = this._programOutline;
 			outlineProgram.program.use();
 
-			const gradA = this.outline.gradientA ?? 0;
-			const dirA = this.outline.gradientDirectionA ?? 0;
-			const colorA1 = this.outline.colorA;
-			const colorA2 = this.outline.colorA2 ?? this.outline.colorA;
+			const iterations = this.outlineA.size;
+			const grad = this.outlineA.gradient;
+			const dir = this.outlineA.gradientDirection;
+			const colorFrom = this.outlineA.colorFrom;
+			const colorTo = this.outlineA.colorTo;
 
-			gl.uniform4f(outlineProgram.locations.outlineColor, colorA1[0], colorA1[1], colorA1[2], colorA1[3] ?? 1);
-			gl.uniform4f(outlineProgram.locations.outlineColor2, colorA2[0], colorA2[1], colorA2[2], colorA2[3] ?? 1);
-			gl.uniform1f(outlineProgram.locations.gradient, gradA);
-			gl.uniform1f(outlineProgram.locations.gradientDirection, dirA);
+			gl.uniform4f(outlineProgram.locations.outlineColor, ...colorFrom, 1);
+			gl.uniform4f(outlineProgram.locations.outlineColor2, ...colorTo, 1);
+			gl.uniform1f(outlineProgram.locations.gradient, grad);
+			gl.uniform1f(outlineProgram.locations.gradientDirection, dir);
 			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1305,7 +1318,7 @@ export class PicoCADViewer {
 			);
 			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
 
-			for (let i = 0; i < outlineAIterations; i++) {
+			for (let i = 0; i < iterations; i++) {
 				// Swap target framebuffer.
 				let nextTex = swapFB();
 
@@ -1322,19 +1335,20 @@ export class PicoCADViewer {
 		}
 
 		// Second outline.
-		if (outlineBIterations > 0) {
+		if (this.outlineB.enabled) {
 			let outlineProgram = this._programOutline;
 			outlineProgram.program.use();
 
-			const gradB = this.outline.gradientB ?? 0;
-			const dirB = this.outline.gradientDirectionB ?? 0;
-			const colorB1 = this.outline.colorB;
-			const colorB2 = this.outline.colorB2 ?? this.outline.colorB;
+			const iterations = this.outlineB.size;
+			const grad = this.outlineB.gradient;
+			const dir = this.outlineB.gradientDirection;
+			const colorFrom = this.outlineB.colorFrom;
+			const colorTo = this.outlineB.colorTo;
 
-			gl.uniform4f(outlineProgram.locations.outlineColor, colorB1[0], colorB1[1], colorB1[2], colorB1[3] ?? 1);
-			gl.uniform4f(outlineProgram.locations.outlineColor2, colorB2[0], colorB2[1], colorB2[2], colorB2[3] ?? 1);
-			gl.uniform1f(outlineProgram.locations.gradient, gradB);
-			gl.uniform1f(outlineProgram.locations.gradientDirection, dirB);
+			gl.uniform4f(outlineProgram.locations.outlineColor, ...colorFrom, 1);
+			gl.uniform4f(outlineProgram.locations.outlineColor2, ...colorTo, 1);
+			gl.uniform1f(outlineProgram.locations.gradient, grad);
+			gl.uniform1f(outlineProgram.locations.gradientDirection, dir);
 			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1348,7 +1362,7 @@ export class PicoCADViewer {
 			);
 			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
 
-			for (let i = 0; i < outlineBIterations; i++) {
+			for (let i = 0; i < iterations; i++) {
 				// Swap target framebuffer.
 				let nextTex = swapFB();
 
@@ -1365,7 +1379,7 @@ export class PicoCADViewer {
 		}
 
 		// Chromatic aberration
-		if (doChromaticAberration) {
+		if (this.chromaticAberration.enabled) {
 			// Swap target framebuffer.
 			let nextTex = swapFB();
 
@@ -1780,8 +1794,8 @@ export class PicoCADViewer {
 			if (!pass.isEmpty()) count++;
 		}
 		if (this.drawWireframe) count++;
-		count += this.outline.size;
-		count += this.outline.size2;
+		count += this.outlineA.size;
+		count += this.outlineB.size;
 		return count;
 	}
 

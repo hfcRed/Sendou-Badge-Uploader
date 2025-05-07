@@ -23,8 +23,7 @@ interface Images {
 	generated: GeneratedImage[];
 }
 
-interface ViewerSettings {
-	name: string;
+interface ViewportSettings {
 	cameraDistance: number;
 	cameraHeight: number;
 	cameraTilt: number;
@@ -35,31 +34,60 @@ interface ViewerSettings {
 	rotationOverlay: boolean;
 	watermark: string;
 	isCentered: boolean;
-	renderMode: string;
-	shading: boolean;
-	outline: {
-		sizeA: number;
-		colorA: string;
-		colorA2: string;
-		gradientA: number;
-		gradientDirectionA: number;
-		sizeB: number;
-		colorB: string;
-		colorB2: string;
-		gradientB: number;
-		gradientDirectionB: number;
-	};
-	wireframe: boolean;
-	wireframeXray: boolean;
-	wireframeColor: string;
-	usingHDTexture: boolean;
-	hdShadingSteps: number;
-	hdShadingColor: string;
-	normalStrength: number;
 }
 
+interface ShaderSettings {
+	renderMode: string;
+	shading: boolean;
+	usingHDTexture: boolean;
+	hdOptions: {
+		shadingSteps: number;
+		shadingColor: string;
+		normalMapStrength: number;
+		specular: {
+			enabled: boolean;
+			strength: number;
+			smoothness: number;
+			color: string;
+		};
+	};
+	outlineA: {
+		enabled: boolean;
+		size: number;
+		colorFrom: string;
+		colorTo: string;
+		gradient: number;
+		gradientDirection: number;
+	};
+	outlineB: {
+		enabled: boolean;
+		size: number;
+		colorFrom: string;
+		colorTo: string;
+		gradient: number;
+		gradientDirection: number;
+	};
+	wireframe: {
+		enabled: boolean;
+		xray: boolean;
+		color: string;
+	};
+	chromaticAberration: {
+		enabled: boolean;
+		strength: number;
+		redOffset: number;
+		greenOffset: number;
+		blueOffset: number;
+		radialFalloff: number;
+		centerX: number;
+		centerY: number;
+	};
+}
+
+type ViewerSettings = ViewportSettings & ShaderSettings & { name: string };
+
 export class Viewer {
-	viewport = $state({
+	viewport = $state<ViewportSettings>({
 		cameraDistance: 7,
 		cameraHeight: 1,
 		cameraTilt: 0.1,
@@ -72,29 +100,44 @@ export class Viewer {
 		isCentered: true
 	});
 
-	shader = $state({
+	shader = $state<ShaderSettings>({
 		renderMode: 'Texture',
 		shading: true,
-		outline: {
-			sizeA: 0,
-			colorA: '#ffffff',
-			colorA2: '#ffffff',
-			gradientA: 0,
-			gradientDirectionA: 0,
-			sizeB: 0,
-			colorB: '#ffffff',
-			colorB2: '#ffffff',
-			gradientB: 0,
-			gradientDirectionB: 0
-		},
-		wireframe: false,
-		wireframeXray: true,
-		wireframeColor: '#ffffff',
 		usingHDTexture: false,
-		hdShadingSteps: 3,
-		hdShadingColor: '#000000',
-		normalStrength: 1,
+		hdOptions: {
+			shadingSteps: 4,
+			shadingColor: '#000000',
+			normalMapStrength: 0.5,
+			specular: {
+				enabled: false,
+				strength: 0,
+				smoothness: 10,
+				color: '#ffffff'
+			}
+		},
+		outlineA: {
+			enabled: false,
+			size: 0,
+			colorFrom: '#ffffff',
+			colorTo: '#ffffff',
+			gradient: 0,
+			gradientDirection: 0
+		},
+		outlineB: {
+			enabled: false,
+			size: 0,
+			colorFrom: '#ffffff',
+			colorTo: '#ffffff',
+			gradient: 0,
+			gradientDirection: 0
+		},
+		wireframe: {
+			enabled: false,
+			xray: false,
+			color: '#ffffff'
+		},
 		chromaticAberration: {
+			enabled: false,
 			strength: 0,
 			redOffset: 1,
 			greenOffset: 0,
@@ -102,13 +145,10 @@ export class Viewer {
 			radialFalloff: 1.5,
 			centerX: 0,
 			centerY: 0
-		},
-		specular: {
-			strength: 0,
-			smoothness: 10,
-			color: '#ffffff'
 		}
 	});
+
+	modelName = $state('');
 
 	gif = $state<Gif>({
 		url: null,
@@ -125,12 +165,10 @@ export class Viewer {
 	});
 	readonly selectedImage = $derived(this.images.generated.find((image) => image.selected));
 
-	modelName = $state('');
-
 	private viewportCanvas!: HTMLCanvasElement;
-	private textureCanvas = $state<CanvasRenderingContext2D>()!;
-	private normalMapCanvas = $state<CanvasRenderingContext2D>()!;
-	private lightmapCanvas = $state<CanvasRenderingContext2D>()!;
+	private textureCanvas!: CanvasRenderingContext2D;
+	private normalMapCanvas!: CanvasRenderingContext2D;
+	private lightmapCanvas!: CanvasRenderingContext2D;
 
 	private worker!: Worker;
 	workerLoaded = $state(false);
@@ -383,32 +421,32 @@ export class Viewer {
 		this.pico.backgroundColor = [0, 0, 0, 1];
 		this.pico.renderMode = data.renderMode.toLowerCase() as PicoCADRenderMode;
 		this.pico.shading = data.shading;
-		this.pico.drawWireframe = data.wireframe;
-		this.pico.wireframeXray = data.wireframeXray;
-		this.pico.wireframeColor = hexToRGB(data.wireframeColor);
+		this.pico.drawWireframe = data.wireframe.enabled;
+		this.pico.wireframeXray = data.wireframe.xray;
+		this.pico.wireframeColor = hexToRGB(data.wireframe.color);
 
-		this.pico.hdOptions.shadingSteps = data.hdShadingSteps;
-		this.pico.hdOptions.shadingColor = hexToRGB(data.hdShadingColor);
-		this.pico.hdOptions.normalMapStrength = data.normalStrength;
+		this.pico.hdOptions = {
+			...data.hdOptions,
+			shadingColor: hexToRGB(data.hdOptions.shadingColor),
+			specular: {
+				...data.hdOptions.specular,
+				color: hexToRGB(data.hdOptions.specular.color)
+			}
+		};
 
-		this.pico.outline.sizeA = data.outline.sizeA;
-		this.pico.outline.colorA = hexToRGB(data.outline.colorA);
-		this.pico.outline.colorA2 = hexToRGB(data.outline.colorA2);
-		this.pico.outline.gradientA = data.outline.gradientA;
-		this.pico.outline.gradientDirectionA = data.outline.gradientDirectionA;
-		this.pico.outline.sizeB = data.outline.sizeB;
-		this.pico.outline.colorB = hexToRGB(data.outline.colorB);
-		this.pico.outline.colorB2 = hexToRGB(data.outline.colorB2);
-		this.pico.outline.gradientB = data.outline.gradientB;
-		this.pico.outline.gradientDirectionB = data.outline.gradientDirectionB;
+		this.pico.outlineA = {
+			...data.outlineA,
+			colorFrom: hexToRGB(data.outlineA.colorFrom),
+			colorTo: hexToRGB(data.outlineA.colorTo)
+		};
 
-		this.pico.chromaticAberration.strength = this.shader.chromaticAberration.strength;
-		this.pico.chromaticAberration.redOffset = this.shader.chromaticAberration.redOffset;
-		this.pico.chromaticAberration.greenOffset = this.shader.chromaticAberration.greenOffset;
-		this.pico.chromaticAberration.blueOffset = this.shader.chromaticAberration.blueOffset;
-		this.pico.chromaticAberration.radialFalloff = this.shader.chromaticAberration.radialFalloff;
-		this.pico.chromaticAberration.centerX = this.shader.chromaticAberration.centerX;
-		this.pico.chromaticAberration.centerY = this.shader.chromaticAberration.centerY;
+		this.pico.outlineB = {
+			...data.outlineB,
+			colorFrom: hexToRGB(data.outlineB.colorFrom),
+			colorTo: hexToRGB(data.outlineB.colorTo)
+		};
+
+		this.pico.chromaticAberration = { ...data.chromaticAberration };
 	}
 
 	private addEventListeners() {

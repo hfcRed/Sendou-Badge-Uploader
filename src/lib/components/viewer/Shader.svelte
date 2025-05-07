@@ -38,14 +38,14 @@
 		min={0}
 		max={25}
 		step={1}
-		bind:value={viewer.shader.hdShadingSteps}
+		bind:value={viewer.shader.hdOptions.shadingSteps}
 		oninput={(e) => (viewer.pico.hdOptions.shadingSteps = parseFloat(e.currentTarget.value))}
 	/>
 	<label>
 		Shading Color
 		<input
 			type="color"
-			bind:value={viewer.shader.hdShadingColor}
+			bind:value={viewer.shader.hdOptions.shadingColor}
 			oninput={(e) => (viewer.pico.hdOptions.shadingColor = hexToRGB(e.currentTarget.value))}
 		/>
 	</label>
@@ -54,218 +54,291 @@
 		min={0}
 		max={1}
 		step={0.01}
-		bind:value={viewer.shader.normalStrength}
+		bind:value={viewer.shader.hdOptions.normalMapStrength}
 		oninput={(e) => (viewer.pico.hdOptions.normalMapStrength = parseFloat(e.currentTarget.value))}
 	/>
 </fieldset>
 <hr />
 <h3>Effects</h3>
 <fieldset>
-	<legend><h4>First Outline</h4></legend>
-	<NumericControl
-		label={'Width'}
-		min={0}
-		max={25}
-		step={1}
-		bind:value={viewer.shader.outline.sizeA}
-		oninput={(e) => (viewer.pico.outline.sizeA = parseFloat(e.currentTarget.value))}
-	/>
-	<label>
-		Color
-		<input
-			type="color"
-			bind:value={viewer.shader.outline.colorA}
-			oninput={(e) => (viewer.pico.outline.colorA = hexToRGB(e.currentTarget.value))}
-		/>
-	</label>
-	<label>
-		Gradient Color
-		<input
-			type="color"
-			bind:value={viewer.shader.outline.colorA2}
-			oninput={(e) => (viewer.pico.outline.colorA2 = hexToRGB(e.currentTarget.value))}
-		/>
-	</label>
-	<NumericControl
-		label={'Gradient Strength'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.outline.gradientA}
-		oninput={(e) => (viewer.pico.outline.gradientA = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Gradient Direction'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.outline.gradientDirectionA}
-		oninput={(e) => (viewer.pico.outline.gradientDirectionA = parseFloat(e.currentTarget.value))}
-	/>
-</fieldset>
-<hr />
-<fieldset>
-	<legend><h4>Second Outline</h4></legend>
-	<NumericControl
-		label={'Width'}
-		min={0}
-		max={25}
-		step={1}
-		bind:value={viewer.shader.outline.sizeB}
-		oninput={(e) => (viewer.pico.outline.sizeB = parseFloat(e.currentTarget.value))}
-	/>
-	<label>
-		Color
-		<input
-			type="color"
-			bind:value={viewer.shader.outline.colorB}
-			oninput={(e) => (viewer.pico.outline.colorB = hexToRGB(e.currentTarget.value))}
-		/>
-	</label>
-	<label>
-		Gradient Color
-		<input
-			type="color"
-			bind:value={viewer.shader.outline.colorB2}
-			oninput={(e) => (viewer.pico.outline.colorB2 = hexToRGB(e.currentTarget.value))}
-		/>
-	</label>
-	<NumericControl
-		label={'Gradient Strength'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.outline.gradientB}
-		oninput={(e) => (viewer.pico.outline.gradientB = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Gradient Direction'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.outline.gradientDirectionB}
-		oninput={(e) => (viewer.pico.outline.gradientDirectionB = parseFloat(e.currentTarget.value))}
-	/>
-</fieldset>
-<hr />
-<fieldset>
-	<legend><h4>Wireframe</h4></legend>
-	<div role="group">
+	<legend>
 		<label>
 			<input
 				type="checkbox"
-				role="switch"
-				bind:checked={viewer.shader.wireframe}
-				onchange={() => (viewer.pico.drawWireframe = viewer.shader.wireframe)}
+				bind:checked={viewer.shader.outlineA.enabled}
+				aria-checked={viewer.shader.outlineA.enabled}
+				oninput={(e) => (viewer.pico.outlineA.enabled = e.currentTarget.checked)}
 			/>
-			Wireframe
+			<h4>First Outline</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.outlineA.enabled}
+		<NumericControl
+			label={'Width'}
+			min={0}
+			max={25}
+			step={1}
+			bind:value={viewer.shader.outlineA.size}
+			oninput={(e) => (viewer.pico.outlineA.size = parseFloat(e.currentTarget.value))}
+		/>
+		<label>
+			Color
+			<input
+				type="color"
+				bind:value={viewer.shader.outlineA.colorFrom}
+				oninput={(e) => (viewer.pico.outlineA.colorFrom = hexToRGB(e.currentTarget.value))}
+			/>
 		</label>
 		<label>
+			Gradient Color
+			<input
+				type="color"
+				bind:value={viewer.shader.outlineA.colorTo}
+				oninput={(e) => (viewer.pico.outlineA.colorTo = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+		<NumericControl
+			label={'Gradient Strength'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.outlineA.gradient}
+			oninput={(e) => (viewer.pico.outlineA.gradient = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Gradient Direction'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.outlineA.gradientDirection}
+			oninput={(e) => (viewer.pico.outlineA.gradientDirection = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.outlineB.enabled}
+				aria-checked={viewer.shader.outlineB.enabled}
+				oninput={(e) => (viewer.pico.outlineB.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Second Outline</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.outlineB.enabled}
+		<NumericControl
+			label={'Width'}
+			min={0}
+			max={25}
+			step={1}
+			bind:value={viewer.shader.outlineB.size}
+			oninput={(e) => (viewer.pico.outlineB.size = parseFloat(e.currentTarget.value))}
+		/>
+		<label>
+			Color
+			<input
+				type="color"
+				bind:value={viewer.shader.outlineB.colorFrom}
+				oninput={(e) => (viewer.pico.outlineB.colorFrom = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+		<label>
+			Gradient Color
+			<input
+				type="color"
+				bind:value={viewer.shader.outlineB.colorTo}
+				oninput={(e) => (viewer.pico.outlineB.colorTo = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+		<NumericControl
+			label={'Gradient Strength'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.outlineB.gradient}
+			oninput={(e) => (viewer.pico.outlineB.gradient = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Gradient Direction'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.outlineB.gradientDirection}
+			oninput={(e) => (viewer.pico.outlineB.gradientDirection = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
+</fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.wireframe.enabled}
+				aria-checked={viewer.shader.wireframe.enabled}
+				onchange={() => (viewer.pico.drawWireframe = viewer.shader.wireframe.enabled)}
+			/>
+			<h4>Wireframe</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.wireframe.enabled}
+		<label class="form-margin">
 			<input
 				type="checkbox"
 				role="switch"
-				bind:checked={viewer.shader.wireframeXray}
-				onchange={() => (viewer.pico.wireframeXray = viewer.shader.wireframeXray)}
-				disabled={!viewer.shader.wireframe}
+				bind:checked={viewer.shader.wireframe.xray}
+				onchange={() => (viewer.pico.wireframeXray = viewer.shader.wireframe.xray)}
 			/>
 			Wireframe X-Ray
 		</label>
-	</div>
-	<label>
-		Wireframe Color
-		<input
-			type="color"
-			bind:value={viewer.shader.wireframeColor}
-			oninput={(e) => (viewer.pico.wireframeColor = hexToRGB(e.currentTarget.value))}
-			disabled={!viewer.shader.wireframe}
-		/>
-	</label>
+		<label>
+			Wireframe Color
+			<input
+				type="color"
+				bind:value={viewer.shader.wireframe.color}
+				oninput={(e) => (viewer.pico.wireframeColor = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+	{/if}
 </fieldset>
 <hr />
 <fieldset>
-	<legend><h4>Chromatic Aberration</h4></legend>
-	<NumericControl
-		label={'Strength'}
-		min={0}
-		max={2}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.strength}
-		oninput={(e) => (viewer.pico.chromaticAberration.strength = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Red Offset'}
-		min={-1}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.redOffset}
-		oninput={(e) => (viewer.pico.chromaticAberration.redOffset = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Green Offset'}
-		min={-1}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.greenOffset}
-		oninput={(e) =>
-			(viewer.pico.chromaticAberration.greenOffset = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Blue Offset'}
-		min={-1}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.blueOffset}
-		oninput={(e) =>
-			(viewer.pico.chromaticAberration.blueOffset = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Radial Falloff'}
-		min={-2}
-		max={2}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.radialFalloff}
-		oninput={(e) =>
-			(viewer.pico.chromaticAberration.radialFalloff = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Center X'}
-		min={-1}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.centerX}
-		oninput={(e) => (viewer.pico.chromaticAberration.centerX = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Center Y'}
-		min={-1}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.chromaticAberration.centerY}
-		oninput={(e) => (viewer.pico.chromaticAberration.centerY = parseFloat(e.currentTarget.value))}
-	/>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.chromaticAberration.enabled}
+				aria-checked={viewer.shader.chromaticAberration.enabled}
+				oninput={(e) => (viewer.pico.chromaticAberration.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Chromatic Aberration</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.chromaticAberration.enabled}
+		<NumericControl
+			label={'Strength'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.strength}
+			oninput={(e) =>
+				(viewer.pico.chromaticAberration.strength = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Red Offset'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.redOffset}
+			oninput={(e) =>
+				(viewer.pico.chromaticAberration.redOffset = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Green Offset'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.greenOffset}
+			oninput={(e) =>
+				(viewer.pico.chromaticAberration.greenOffset = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Blue Offset'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.blueOffset}
+			oninput={(e) =>
+				(viewer.pico.chromaticAberration.blueOffset = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Radial Falloff'}
+			min={-2}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.radialFalloff}
+			oninput={(e) =>
+				(viewer.pico.chromaticAberration.radialFalloff = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Center X'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.centerX}
+			oninput={(e) => (viewer.pico.chromaticAberration.centerX = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Center Y'}
+			min={-1}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.chromaticAberration.centerY}
+			oninput={(e) => (viewer.pico.chromaticAberration.centerY = parseFloat(e.currentTarget.value))}
+		/>
+	{/if}
 </fieldset>
 <h3>HD Effects</h3>
 <fieldset disabled={!viewer.shader.usingHDTexture}>
-	<legend><h4>Specular Reflection</h4></legend>
-	<NumericControl
-		label={'Strength'}
-		min={0}
-		max={1}
-		step={0.01}
-		bind:value={viewer.shader.specular.strength}
-		oninput={(e) => (viewer.pico.hdOptions.specular.strength = parseFloat(e.currentTarget.value))}
-	/>
-	<NumericControl
-		label={'Smoothness'}
-		min={0}
-		max={100}
-		step={0.01}
-		bind:value={viewer.shader.specular.smoothness}
-		oninput={(e) => (viewer.pico.hdOptions.specular.smoothness = parseFloat(e.currentTarget.value))}
-	/>
-	<input
-		type="color"
-		bind:value={viewer.shader.specular.color}
-		oninput={(e) => (viewer.pico.hdOptions.specular.color = hexToRGB(e.currentTarget.value))}
-	/>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.hdOptions.specular.enabled}
+				aria-checked={viewer.shader.hdOptions.specular.enabled}
+				oninput={(e) => (viewer.pico.hdOptions.specular.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Specular</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.hdOptions.specular.enabled}
+		<NumericControl
+			label={'Strength'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.hdOptions.specular.strength}
+			oninput={(e) => (viewer.pico.hdOptions.specular.strength = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Smoothness'}
+			min={0}
+			max={100}
+			step={0.01}
+			bind:value={viewer.shader.hdOptions.specular.smoothness}
+			oninput={(e) =>
+				(viewer.pico.hdOptions.specular.smoothness = parseFloat(e.currentTarget.value))}
+		/>
+		<input
+			type="color"
+			bind:value={viewer.shader.hdOptions.specular.color}
+			oninput={(e) => (viewer.pico.hdOptions.specular.color = hexToRGB(e.currentTarget.value))}
+		/>
+	{/if}
 </fieldset>
+
+<style>
+	legend > label {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		user-select: none;
+
+		&:has(input[aria-checked='true']) {
+			margin-bottom: 1rem;
+		}
+
+		& h4,
+		input {
+			margin: 0;
+		}
+	}
+
+	fieldset[disabled] {
+		opacity: var(--pico-form-element-disabled-opacity);
+		pointer-events: none;
+	}
+</style>
