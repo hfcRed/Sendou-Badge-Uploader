@@ -402,7 +402,7 @@
 		<NumericControl
 			label={'Intensity'}
 			min={0}
-			max={2}
+			max={5}
 			step={0.01}
 			bind:value={viewer.shader.bloom.intensity}
 			oninput={(e) => (viewer.pico.bloom.intensity = parseFloat(e.currentTarget.value))}
@@ -410,7 +410,7 @@
 		<NumericControl
 			label={'Blur'}
 			min={0}
-			max={1}
+			max={5}
 			step={0.01}
 			bind:value={viewer.shader.bloom.blur}
 			oninput={(e) => (viewer.pico.bloom.blur = parseFloat(e.currentTarget.value))}
@@ -490,7 +490,7 @@
 		<NumericControl
 			label={'Pixel Size'}
 			min={1}
-			max={32}
+			max={5}
 			step={1}
 			bind:value={viewer.shader.pixelate.pixelSize}
 			oninput={(e) => (viewer.pico.pixelate.pixelSize = parseFloat(e.currentTarget.value))}

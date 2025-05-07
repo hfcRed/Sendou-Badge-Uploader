@@ -331,6 +331,9 @@ export class PicoCADViewer {
 		this._programNoise = createNoiseProgram(gl);
 		/** @private */
 		this._programBloom = createBloomProgram(gl);
+		// Add horizontal and vertical blur programs for separable bloom
+		this._programBloomBlurH = createBloomBlurProgram(gl, true);
+		this._programBloomBlurV = createBloomBlurProgram(gl, false);
 		/** @private */
 		this._programDither = createDitherProgram(gl);
 		/** @private */
@@ -1494,25 +1497,115 @@ export class PicoCADViewer {
 			currFrameBufferTex = nextTex;
 		}
 
-		// Bloom/glow
+		// Bloom/glow (separable gaussian multi-pass)
 		if (this.bloom.enabled) {
-			let prog = this._programBloom;
-			prog.program.use();
-			let nextTex = swapFB();
+			const width = this._resolution[0];
+			const height = this._resolution[1];
+			const progThreshold = this._programBloom;
+			const progBlurH = this._programBloomBlurH;
+			const progBlurV = this._programBloomBlurV;
 
+			gl.blendFunc(gl.ONE, gl.ONE);
+			gl.enable(gl.BLEND);
+
+			// Bloom pass ping pong
+			if (!this._bloomTex1) {
+				this._bloomTex1 = this._createTexture(null, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
+			}
+			if (!this._bloomTex2) {
+				this._bloomTex2 = this._createTexture(null, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
+			}
+			if (!this._bloomFB1) {
+				this._bloomFB1 = gl.createFramebuffer();
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB1);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._bloomTex1, 0);
+			}
+			if (!this._bloomFB2) {
+				this._bloomFB2 = gl.createFramebuffer();
+				gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB2);
+				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._bloomTex2, 0);
+			}
+
+			// Extract bright areas using threshold
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB1);
+			gl.viewport(0, 0, width, height);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+
+			progThreshold.program.use();
 			gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
-			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.threshold, this.bloom.threshold);
-			gl.uniform1f(prog.locations.intensity, this.bloom.intensity);
-			gl.uniform1f(prog.locations.blur, this.bloom.blur);
-			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+			gl.uniform1i(progThreshold.locations.mainTex, 0);
+			gl.uniform1f(progThreshold.locations.threshold, this.bloom.threshold);
+			gl.uniform1f(progThreshold.locations.intensity, 1.0);
+			gl.uniform1f(progThreshold.locations.blur, 0.0);
+			gl.uniform2f(progThreshold.locations.resolution, width, height);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
-			gl.enableVertexAttribArray(prog.program.vertexLocation);
-
+			gl.vertexAttribPointer(progThreshold.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(progThreshold.program.vertexLocation);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Horizontal blur
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB2);
+			gl.viewport(0, 0, width, height);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+
+			progBlurH.program.use();
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this._bloomTex1);
+			gl.uniform1i(progBlurH.locations.mainTex, 0);
+			gl.uniform1f(progBlurH.locations.blur, this.bloom.blur);
+			gl.uniform2f(progBlurH.locations.resolution, width, height);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(progBlurH.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(progBlurH.program.vertexLocation);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Vertical blur
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB1);
+			gl.viewport(0, 0, width, height);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+
+			progBlurV.program.use();
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this._bloomTex2);
+			gl.uniform1i(progBlurV.locations.mainTex, 0);
+			gl.uniform1f(progBlurV.locations.blur, this.bloom.blur);
+			gl.uniform2f(progBlurV.locations.resolution, width, height);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(progBlurV.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(progBlurV.program.vertexLocation);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Composite bloom with original
+			let nextTex = swapFB();
+			progThreshold.program.use();
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(progThreshold.locations.mainTex, 0);
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, this._bloomTex1);
+
+			gl.uniform1f(progThreshold.locations.threshold, 0.0);
+			gl.uniform1f(progThreshold.locations.intensity, this.bloom.intensity);
+			gl.uniform1f(progThreshold.locations.blur, 0.0);
+			gl.uniform2f(progThreshold.locations.resolution, width, height);
+
+			if (!progThreshold.locations.bloomTex) {
+				progThreshold.locations.bloomTex = progThreshold.program.getUniformLocation("bloomTex");
+			}
+			gl.uniform1i(progThreshold.locations.bloomTex, 1);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(progThreshold.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(progThreshold.program.vertexLocation);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+			gl.disable(gl.BLEND);
+
 			currFrameBufferTex = nextTex;
 		}
 
@@ -2013,6 +2106,23 @@ export class PicoCADViewer {
 		if (this._normalMapTex) {
 			gl.deleteTexture(this._normalMapTex);
 			this._normalMapTex = null;
+		}
+
+		if (this._bloomTex1) {
+			this.gl.deleteTexture(this._bloomTex1);
+			this._bloomTex1 = null;
+		}
+		if (this._bloomTex2) {
+			this.gl.deleteTexture(this._bloomTex2);
+			this._bloomTex2 = null;
+		}
+		if (this._bloomFB1) {
+			this.gl.deleteFramebuffer(this._bloomFB1);
+			this._bloomFB1 = null;
+		}
+		if (this._bloomFB2) {
+			this.gl.deleteFramebuffer(this._bloomFB2);
+			this._bloomFB2 = null;
 		}
 	}
 }
@@ -2585,6 +2695,7 @@ function createBloomProgram(gl) {
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
+		uniform sampler2D bloomTex;
 		uniform highp float threshold;
 		uniform highp float intensity;
 		uniform highp float blur;
@@ -2592,32 +2703,81 @@ function createBloomProgram(gl) {
 
 		void main() {
 			highp vec4 col = texture2D(mainTex, v_uv);
-			highp vec3 bloom = vec3(0.0);
-			highp float count = 0.0;
+			highp vec4 bloom = vec4(0.0);
 
-			for (int x = -2; x <= 2; x++) {
-				for (int y = -2; y <= 2; y++) {
-					highp vec2 offset = vec2(float(x), float(y)) * blur / resolution;
-					highp vec3 c = texture2D(mainTex, v_uv + offset).rgb;
-					if (max(max(c.r, c.g), c.b) > threshold) {
-						bloom += c;
-						count += 1.0;
-					}
+			if (intensity > 1e-4 && threshold < 1e-4) {
+				bloom = texture2D(bloomTex, v_uv);
+				col.rgb += bloom.rgb * intensity;
+				gl_FragColor = col;
+			} else {
+				highp float maxc = max(max(col.r, col.g), col.b);
+
+				if (maxc > threshold) {
+					gl_FragColor = col;
+				} else {
+					gl_FragColor = vec4(0.0, 0.0, 0.0, col.a);
 				}
 			}
-
-			if (count > 0.0) bloom /= count;
-
-			col.rgb += bloom * intensity;
-			gl_FragColor = col;
 		}
 	`);
 	return {
 		program: program,
 		locations: {
 			mainTex: program.getUniformLocation("mainTex"),
+			bloomTex: program.getUniformLocation("bloomTex"),
 			threshold: program.getUniformLocation("threshold"),
 			intensity: program.getUniformLocation("intensity"),
+			blur: program.getUniformLocation("blur"),
+			resolution: program.getUniformLocation("resolution"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {boolean} horizontal
+ */
+function createBloomBlurProgram(gl, horizontal) {
+	const program = new ShaderProgram(gl, `
+        attribute vec4 vertex;
+        varying highp vec2 v_uv;
+        void main() {
+            v_uv = 0.5 + vertex.xy * 0.5;
+            gl_Position = vertex;
+        }
+    `, `
+        varying highp vec2 v_uv;
+
+        uniform sampler2D mainTex;
+        uniform highp float blur;
+        uniform highp vec2 resolution;
+
+        void main() {
+            highp vec2 texel = 1.0 / resolution;
+            highp vec4 result = vec4(0.0);
+            highp float weights[5];
+
+            weights[0] = 0.227027;
+            weights[1] = 0.1945946;
+            weights[2] = 0.1216216;
+            weights[3] = 0.054054;
+            weights[4] = 0.016216;
+
+            highp vec2 offset = vec2(${horizontal ? "blur * texel.x" : "0.0"}, ${horizontal ? "0.0" : "blur * texel.y"});
+            result += texture2D(mainTex, v_uv) * weights[0];
+
+            for (int i = 1; i < 5; ++i) {
+                result += texture2D(mainTex, v_uv + float(i) * offset) * weights[i];
+                result += texture2D(mainTex, v_uv - float(i) * offset) * weights[i];
+            }
+
+            gl_FragColor = result;
+        }
+    `);
+	return {
+		program: program,
+		locations: {
+			mainTex: program.getUniformLocation("mainTex"),
 			blur: program.getUniformLocation("blur"),
 			resolution: program.getUniformLocation("resolution"),
 		}
