@@ -1407,44 +1407,6 @@ export class PicoCADViewer {
 			}
 		}
 
-		// Chromatic aberration
-		if (this.chromaticAberration.enabled) {
-			// Swap target framebuffer.
-			let nextTex = swapFB();
-
-			let chromaticProgram = this._programChromatic;
-			chromaticProgram.program.use();
-
-			gl.uniform2f(chromaticProgram.locations.resolution, this._resolution[0], this._resolution[1]);
-			gl.uniform1f(chromaticProgram.locations.amount, this.chromaticAberration.strength);
-			gl.uniform1f(chromaticProgram.locations.redOffset, this.chromaticAberration.redOffset);
-			gl.uniform1f(chromaticProgram.locations.greenOffset, this.chromaticAberration.greenOffset);
-			gl.uniform1f(chromaticProgram.locations.blueOffset, this.chromaticAberration.blueOffset);
-			gl.uniform1f(chromaticProgram.locations.radialFalloff, this.chromaticAberration.radialFalloff);
-			gl.uniform2f(chromaticProgram.locations.center, this.chromaticAberration.centerX, this.chromaticAberration.centerY);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(
-				chromaticProgram.program.vertexLocation,
-				2,
-				gl.FLOAT,
-				false,
-				0,
-				0
-			);
-			gl.enableVertexAttribArray(chromaticProgram.program.vertexLocation);
-
-			// Draw to framebuffer.
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
-			gl.uniform1i(chromaticProgram.locations.mainTex, 0);
-
-			gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-			// Finalize swap.
-			currFrameBufferTex = nextTex;
-		}
-
 		// Color grading/adjustment
 		if (this.colorGrading.enabled) {
 			let prog = this._programColorGrade;
@@ -1480,26 +1442,6 @@ export class PicoCADViewer {
 			gl.uniform3fv(prog.locations.channelLevels, this.posterize.channelLevels);
 			gl.uniform1f(prog.locations.gamma, this.posterize.gamma);
 			gl.uniform1i(prog.locations.colorBanding, this.posterize.colorBanding);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
-			gl.enableVertexAttribArray(prog.program.vertexLocation);
-
-			gl.drawArrays(gl.TRIANGLES, 0, 6);
-			currFrameBufferTex = nextTex;
-		}
-
-		// Noise/film grain
-		if (this.noise.enabled) {
-			let prog = this._programNoise;
-			prog.program.use();
-			let nextTex = swapFB();
-
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
-			gl.uniform1i(prog.locations.mainTex, 0);
-			gl.uniform1f(prog.locations.amount, this.noise.amount);
-			gl.uniform1f(prog.locations.time, performance.now() / 10000);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -1700,6 +1642,64 @@ export class PicoCADViewer {
 			gl.enableVertexAttribArray(prog.program.vertexLocation);
 
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Noise/film grain
+		if (this.noise.enabled) {
+			let prog = this._programNoise;
+			prog.program.use();
+			let nextTex = swapFB();
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(prog.locations.mainTex, 0);
+			gl.uniform1f(prog.locations.amount, this.noise.amount);
+			gl.uniform1f(prog.locations.time, performance.now() / 10000);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
+			gl.enableVertexAttribArray(prog.program.vertexLocation);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			currFrameBufferTex = nextTex;
+		}
+
+		// Chromatic aberration
+		if (this.chromaticAberration.enabled) {
+			// Swap target framebuffer.
+			let nextTex = swapFB();
+
+			let chromaticProgram = this._programChromatic;
+			chromaticProgram.program.use();
+
+			gl.uniform2f(chromaticProgram.locations.resolution, this._resolution[0], this._resolution[1]);
+			gl.uniform1f(chromaticProgram.locations.amount, this.chromaticAberration.strength);
+			gl.uniform1f(chromaticProgram.locations.redOffset, this.chromaticAberration.redOffset);
+			gl.uniform1f(chromaticProgram.locations.greenOffset, this.chromaticAberration.greenOffset);
+			gl.uniform1f(chromaticProgram.locations.blueOffset, this.chromaticAberration.blueOffset);
+			gl.uniform1f(chromaticProgram.locations.radialFalloff, this.chromaticAberration.radialFalloff);
+			gl.uniform2f(chromaticProgram.locations.center, this.chromaticAberration.centerX, this.chromaticAberration.centerY);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
+			gl.vertexAttribPointer(
+				chromaticProgram.program.vertexLocation,
+				2,
+				gl.FLOAT,
+				false,
+				0,
+				0
+			);
+			gl.enableVertexAttribArray(chromaticProgram.program.vertexLocation);
+
+			// Draw to framebuffer.
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, currFrameBufferTex);
+			gl.uniform1i(chromaticProgram.locations.mainTex, 0);
+
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+			// Finalize swap.
 			currFrameBufferTex = nextTex;
 		}
 
@@ -2681,27 +2681,31 @@ function createPosterizeProgram(gl) {
  */
 function createNoiseProgram(gl) {
 	const program = new ShaderProgram(gl, `
-		attribute vec4 vertex;
-		varying highp vec2 v_uv;
-		void main() {
-			v_uv = 0.5 + vertex.xy * 0.5;
-			gl_Position = vertex;
-		}
-	`, `
-		varying highp vec2 v_uv;
+        attribute vec4 vertex;
+        varying highp vec2 v_uv;
 
-		uniform sampler2D mainTex;
-		uniform highp float amount;
-		uniform highp float time;
+        void main() {
+            v_uv = 0.5 + vertex.xy * 0.5;
+            gl_Position = vertex;
+        }
+    `, `
+        varying highp vec2 v_uv;
 
-		void main() {
-			highp vec4 col = texture2D(mainTex, v_uv);
-			highp float n = fract(sin(dot((v_uv * 512.0).xy, vec2(12.9898,78.233))) * 43758.5453 + time);
+        uniform sampler2D mainTex;
+        uniform highp float amount;
+        uniform highp float time;
 
-			col.rgb += (n - 0.5) * amount;
-			gl_FragColor = col;
-		}
-	`);
+        void main() {
+            highp vec4 col = texture2D(mainTex, v_uv);
+            
+            if (col.a > 0.01) {
+                highp float n = fract(sin(dot((v_uv * 512.0).xy, vec2(12.9898,78.233))) * 43758.5453 + time);
+                col.rgb += (n - 0.5) * amount;
+            }
+            
+            gl_FragColor = col;
+        }
+    `);
 	return {
 		program: program,
 		locations: {
