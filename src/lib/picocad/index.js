@@ -2702,7 +2702,7 @@ function createNoiseProgram(gl) {
         void main() {
             highp vec4 col = texture2D(mainTex, v_uv);
             
-            if (col.a > 0.01) {
+            if (col.rgba != vec4(0.0, 0.0, 0.0, 1.0) && col.a > 0.0) {
                 highp float n = fract(sin(dot((v_uv * 512.0).xy, vec2(12.9898,78.233))) * 43758.5453 + time);
                 col.rgb += (n - 0.5) * amount;
             }
