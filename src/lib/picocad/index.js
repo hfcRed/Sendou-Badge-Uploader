@@ -1463,9 +1463,6 @@ export class PicoCADViewer {
 			const progBlurH = this._programBloomBlurH;
 			const progBlurV = this._programBloomBlurV;
 
-			gl.blendFunc(gl.ONE, gl.ONE);
-			gl.enable(gl.BLEND);
-
 			// Bloom pass ping pong
 			if (!this._bloomTex1) {
 				this._bloomTex1 = this._createTexture(null, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
@@ -1503,6 +1500,9 @@ export class PicoCADViewer {
 			gl.enableVertexAttribArray(progThreshold.program.vertexLocation);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+			gl.blendFunc(gl.ONE, gl.ONE);
+			gl.enable(gl.BLEND);
+
 			// Horizontal blur
 			gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB2);
 			gl.viewport(0, 0, width, height);
@@ -1537,6 +1537,9 @@ export class PicoCADViewer {
 			gl.enableVertexAttribArray(progBlurV.program.vertexLocation);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
 
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+			gl.disable(gl.BLEND);
+
 			// Composite bloom with original
 			let nextTex = swapFB();
 			progThreshold.program.use();
@@ -1560,9 +1563,6 @@ export class PicoCADViewer {
 			gl.vertexAttribPointer(progThreshold.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
 			gl.enableVertexAttribArray(progThreshold.program.vertexLocation);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-			gl.disable(gl.BLEND);
 
 			currFrameBufferTex = nextTex;
 		}
@@ -2749,14 +2749,14 @@ function createBloomProgram(gl) {
 			if (intensity > 1e-4 && threshold < 1e-4) {
 				bloom = texture2D(bloomTex, v_uv);
 				col.rgb += bloom.rgb * intensity;
-				gl_FragColor = col;
+				gl_FragColor = vec4(col.rgb, 1.0);
 			} else {
 				highp float maxc = max(max(col.r, col.g), col.b);
 
 				if (maxc > threshold) {
-					gl_FragColor = col;
+					gl_FragColor = vec4(col.rgb, 1.0);
 				} else {
-					gl_FragColor = vec4(0.0, 0.0, 0.0, col.a);
+					gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
 				}
 			}
 		}
