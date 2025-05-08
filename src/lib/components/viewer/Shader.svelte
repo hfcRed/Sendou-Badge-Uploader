@@ -582,7 +582,7 @@
 			label={'Pixel Size'}
 			min={1}
 			max={10}
-			step={1}
+			step={0.01}
 			bind:value={viewer.shader.pixelate.pixelSize}
 			oninput={(e) => (viewer.pico.pixelate.pixelSize = parseFloat(e.currentTarget.value))}
 		/>
