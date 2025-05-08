@@ -200,13 +200,13 @@ export class PicoCADViewer {
 		};
 		/**
 		 * Pixelate options.
-		 * @type {{enabled: boolean, pixelSize: number, shape?: string, blend?: number}}
+		 * @type {{enabled: boolean, pixelSize: number, shape: string, blend: number}}
 		 */
 		this.pixelate = {
 			enabled: false,
 			pixelSize: 1,
-			shape: "square", // "square" or "hex"
-			blend: 1.0,      // 0 = no pixelation, 1 = full pixelation
+			shape: "square",
+			blend: 1.0,
 		};
 		/**
 		 * Lens distortion options.
@@ -1621,7 +1621,7 @@ export class PicoCADViewer {
 			gl.uniform1i(prog.locations.mainTex, 0);
 			gl.uniform1f(prog.locations.pixelSize, this.pixelate.pixelSize);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
-			gl.uniform1i(prog.locations.shape, this.pixelate.shape === "hex" ? 1 : this.pixelate.shape === "circle" ? 2 : this.pixelate.shape === "diamond" ? 3 : this.pixelate.shape === "triangle" ? 4 : 0);
+			gl.uniform1i(prog.locations.shape, this.pixelate.shape === "hex" ? 1 : this.pixelate.shape === "circle" ? 2 : this.pixelate.shape === "diamond" ? 3 : this.pixelate.shape === "triangle" ? 4 : this.pixelate.shape === "cross" ? 5 : this.pixelate.shape === "star" ? 6 : 0);
 			gl.uniform1f(prog.locations.blend, this.pixelate.blend);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -2992,12 +2992,34 @@ function createPixelateProgram(gl) {
 			return (u >= 0.0) && (v >= 0.0) && (u + v <= 1.0);
 		}
 
+		bool pointInCross(highp vec2 px, highp vec2 center, highp float size) {
+			highp float arm = size * 0.2;
+			highp float len = size * 0.5;
+			highp vec2 d = abs(px - center);
+
+			return (d.x <= arm && d.y <= len) || (d.y <= arm && d.x <= len);
+		}
+
+		bool pointInStar(highp vec2 px, highp vec2 center, highp float size) {
+			highp float arm = size * 0.18;
+			highp float len = size * 0.5;
+
+			highp vec2 d = px - center;
+			d = abs(d);
+
+			bool cross = (d.x <= arm && d.y <= len) || (d.y <= arm && d.x <= len);
+			bool diag = (abs(d.x - d.y) <= arm && d.x + d.y <= len);
+
+			return cross || diag;
+		}
+
 		void main() {
 			highp vec2 uv = v_uv;
 			highp vec2 px = uv * resolution;
 			highp vec2 sampleUV = uv;
 
 			if (shape == 1) {
+				// hex
 				highp float size = pixelSize;
 				highp float w = sqrt(3.0) * size;
 				highp float h = 1.5 * size;
@@ -3010,6 +3032,7 @@ function createPixelateProgram(gl) {
 
 				sampleUV = vec2(x, y) / resolution;
 			} else if (shape == 2) {
+				// circle
 				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
 				highp float dist = length(px - center);
 
@@ -3019,6 +3042,7 @@ function createPixelateProgram(gl) {
 					sampleUV = center / resolution;
 				}
 			} else if (shape == 3) {
+				// diamond
 				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
 				highp vec2 rel = abs(px - center);
 
@@ -3028,6 +3052,7 @@ function createPixelateProgram(gl) {
 					sampleUV = center / resolution;
 				}
 			} else if (shape == 4) {
+				// triangle
 				highp float size = pixelSize;
 				
 				highp vec2 base = floor(px / size) * size;
@@ -3040,7 +3065,26 @@ function createPixelateProgram(gl) {
 				} else {
 					sampleUV = uv;
 				}
+			} else if (shape == 5) {
+				// cross
+				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
+
+				if (pointInCross(px, center, pixelSize)) {
+					sampleUV = center / resolution;
+				} else {
+					sampleUV = uv;
+				}
+			} else if (shape == 6) {
+				// star
+				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
+
+				if (pointInStar(px, center, pixelSize)) {
+					sampleUV = center / resolution;
+				} else {
+					sampleUV = uv;
+				}
 			} else {
+				// square
 				sampleUV = floor(px / pixelSize) * pixelSize / resolution;
 			}
 

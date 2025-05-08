@@ -556,6 +556,8 @@
 				<option value="diamond">Diamond</option>
 				<option value="circle">Circle</option>
 				<option value="triangle">Triangle</option>
+				<option value="cross">Cross</option>
+				<option value="star">Star</option>
 			</select>
 		</label>
 		<NumericControl

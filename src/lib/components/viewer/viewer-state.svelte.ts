@@ -543,8 +543,8 @@ export class Viewer {
 		this.pico.crt = { ...data.crt };
 		this.pico.pixelate = {
 			...data.pixelate,
-			shape: data.pixelate.shape ?? 'square',
-			blend: data.pixelate.blend ?? 1.0
+			shape: data.pixelate.shape,
+			blend: data.pixelate.blend
 		};
 		this.pico.lensDistortion = { ...data.lensDistortion };
 	}
