@@ -221,6 +221,18 @@ export class PicoCADViewer {
 		};
 
 		/**
+		 * Floor reflection options.
+		 * @type {{enabled: boolean, opacity: number, height: number, fadeDistance: number, color: number[]}}
+		 */
+		this.floorReflection = {
+			enabled: false,
+			opacity: 0.5,
+			height: 0.0,
+			fadeDistance: 1.0,
+			color: [1.0, 1.0, 1.0]
+		};
+
+		/**
 		 * @type {string|null}
 		 * @private
 		 */
@@ -344,8 +356,9 @@ export class PicoCADViewer {
 		this._programNoise = createNoiseProgram(gl);
 		/** @private */
 		this._programBloom = createBloomProgram(gl);
-		// Add horizontal and vertical blur programs for separable bloom
+		/** @private */
 		this._programBloomBlurH = createBloomBlurProgram(gl, true);
+		/** @private */
 		this._programBloomBlurV = createBloomBlurProgram(gl, false);
 		/** @private */
 		this._programDither = createDitherProgram(gl);
@@ -353,8 +366,10 @@ export class PicoCADViewer {
 		this._programCRT = createCRTProgram(gl);
 		/** @private */
 		this._programPixelate = createPixelateProgram(gl);
-		// Add lens distortion program
+		/** @private */
 		this._programLensDistortion = createLensDistortionProgram(gl);
+		/** @private */
+		this._programReflection = createReflectionProgram(gl);
 	}
 
 	/**
@@ -1112,6 +1127,100 @@ export class PicoCADViewer {
 
 		// Draw model
 		if (doDrawModel) {
+			// Draw reflection
+			if (this.floorReflection.enabled && doDrawModel) {
+				gl.enable(gl.BLEND);
+				gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+				for (const pass of this._passes) {
+					if (pass.isEmpty() || !pass.shading) {
+						continue;
+					}
+
+					const programInfo = this._programReflection;
+					programInfo.program.use();
+
+					gl.uniformMatrix4fv(
+						programInfo.locations.mvp,
+						false,
+						mat,
+					);
+
+					gl.bindBuffer(gl.ARRAY_BUFFER, pass.vertexBuffer);
+					gl.vertexAttribPointer(
+						programInfo.program.vertexLocation,
+						3,
+						gl.FLOAT,
+						false,
+						0,
+						0,
+					);
+					gl.enableVertexAttribArray(programInfo.program.vertexLocation);
+
+					gl.bindBuffer(gl.ARRAY_BUFFER, pass.uvBuffer);
+					gl.vertexAttribPointer(
+						programInfo.locations.uv,
+						2,
+						gl.FLOAT,
+						false,
+						0,
+						0,
+					);
+					gl.enableVertexAttribArray(programInfo.locations.uv);
+
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, this._indexTex);
+					gl.uniform1i(programInfo.locations.indexTex, 0);
+
+					gl.activeTexture(gl.TEXTURE1);
+					gl.bindTexture(gl.TEXTURE_2D, this._lightMapTex);
+					gl.uniform1i(programInfo.locations.lightMap, 1);
+
+					gl.uniform1f(programInfo.locations.lightMapOffset, -0.3571428571428572);
+					gl.uniform1f(programInfo.locations.lightMapGradient, 2.857142857142857);
+
+					gl.uniform3f(programInfo.locations.lightDir, lightVector.x, lightVector.y, lightVector.z);
+
+					gl.uniform1f(programInfo.locations.floorHeight, this.floorReflection.height);
+					gl.uniform1f(programInfo.locations.reflectionOpacity, this.floorReflection.opacity);
+					gl.uniform1f(programInfo.locations.fadeDistance, this.floorReflection.fadeDistance);
+					gl.uniform3f(programInfo.locations.reflectionColor,
+						this.floorReflection.color[0],
+						this.floorReflection.color[1],
+						this.floorReflection.color[2]);
+
+					gl.bindBuffer(gl.ARRAY_BUFFER, pass.normalBuffer);
+					gl.vertexAttribPointer(
+						programInfo.locations.normal,
+						3,
+						gl.FLOAT,
+						false,
+						0,
+						0,
+					);
+					gl.enableVertexAttribArray(programInfo.locations.normal);
+
+					if (pass.cull) {
+						gl.enable(gl.CULL_FACE);
+						gl.cullFace(gl.FRONT);
+					} else {
+						gl.disable(gl.CULL_FACE);
+					}
+
+					gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, pass.triangleBuffer);
+					gl.drawElements(gl.TRIANGLES, pass.vertexCount, gl.UNSIGNED_SHORT, 0);
+
+					gl.cullFace(gl.BACK);
+
+					gl.disableVertexAttribArray(programInfo.program.vertexLocation);
+					gl.disableVertexAttribArray(programInfo.locations.uv);
+					gl.disableVertexAttribArray(programInfo.locations.normal);
+				}
+
+				gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+				gl.disable(gl.BLEND);
+			}
+
 			// Render each pass
 			for (const pass of this._passes) {
 				if (pass.clearDepth) {
@@ -2148,6 +2257,11 @@ export class PicoCADViewer {
 			this.gl.deleteFramebuffer(this._bloomFB2);
 			this._bloomFB2 = null;
 		}
+
+		if (this._programReflection) {
+			this._programReflection.program.free();
+			this._programReflection = null;
+		}
 	}
 }
 
@@ -2363,6 +2477,79 @@ function createWireframeProgram(gl) {
 		locations: {
 			mvp: program.getUniformLocation("mvp"),
 			color: program.getUniformLocation("color"),
+		}
+	};
+}
+
+/**
+ * @param {WebGLRenderingContext} gl 
+ */
+function createReflectionProgram(gl) {
+	const program = new ShaderProgram(gl, `
+        attribute vec4 vertex;
+        attribute vec3 normal;
+        attribute vec2 uv;
+
+        varying highp vec2 v_uv;
+        varying highp vec3 v_normal;
+        varying highp float v_distance;
+
+        uniform mat4 mvp;
+        uniform float floorHeight;
+
+        void main() {
+            vec4 reflectedVertex = vertex;
+            reflectedVertex.y = floorHeight * 2.0 - reflectedVertex.y;
+            
+            v_normal = normal * vec3(1.0, -1.0, 1.0);
+            v_uv = uv;
+            
+            v_distance = abs(vertex.y - floorHeight);
+            gl_Position = mvp * reflectedVertex;
+        }
+    `, `
+        varying highp vec2 v_uv;
+        varying highp vec3 v_normal;
+        varying highp float v_distance;
+        
+        uniform sampler2D indexTex;
+        uniform sampler2D lightMap;
+        uniform highp vec3 lightDir;
+        uniform highp float lightMapOffset;
+        uniform highp float lightMapGradient;
+        uniform highp float reflectionOpacity;
+        uniform highp float fadeDistance;
+        uniform highp vec3 reflectionColor;
+
+        void main() {
+            highp float index = texture2D(indexTex, v_uv).r;
+            if (index == 1.0) discard;
+
+            highp float intensity = clamp(lightMapGradient * abs(dot(v_normal, lightDir)) + lightMapOffset, 0.0, 1.0);
+            highp vec4 color = texture2D(lightMap, vec2(0.015625 + index * 15.9375 + mod(gl_FragCoord.x + gl_FragCoord.y, 2.0) * 0.03125, 1.0 - intensity));
+            highp float fade = max(0.0, 1.0 - v_distance / fadeDistance);
+            
+			color.rgb *= reflectionColor * fade * reflectionOpacity;
+			color.a = 1.0;
+            gl_FragColor = color;
+        }
+    `);
+
+	return {
+		program: program,
+		locations: {
+			uv: program.getAttribLocation("uv"),
+			normal: program.getAttribLocation("normal"),
+			indexTex: program.getUniformLocation("indexTex"),
+			lightMap: program.getUniformLocation("lightMap"),
+			lightDir: program.getUniformLocation("lightDir"),
+			mvp: program.getUniformLocation("mvp"),
+			lightMapOffset: program.getUniformLocation("lightMapOffset"),
+			lightMapGradient: program.getUniformLocation("lightMapGradient"),
+			floorHeight: program.getUniformLocation("floorHeight"),
+			reflectionOpacity: program.getUniformLocation("reflectionOpacity"),
+			fadeDistance: program.getUniformLocation("fadeDistance"),
+			reflectionColor: program.getUniformLocation("reflectionColor")
 		}
 	};
 }

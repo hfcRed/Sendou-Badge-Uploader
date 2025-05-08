@@ -128,6 +128,13 @@ interface ShaderSettings {
 		strength: number;
 		zoom: number;
 	};
+	floorReflection: {
+		enabled: boolean;
+		opacity: number;
+		height: number;
+		fadeDistance: number;
+		color: string;
+	};
 }
 
 type ViewerSettings = ViewportSettings & ShaderSettings & { name: string };
@@ -237,6 +244,13 @@ export class Viewer {
 			enabled: false,
 			strength: 1.0,
 			zoom: 2.0
+		},
+		floorReflection: {
+			enabled: false,
+			opacity: 0.5,
+			height: 0.0,
+			fadeDistance: 1.0,
+			color: '#ffffff'
 		}
 	});
 
@@ -554,6 +568,10 @@ export class Viewer {
 			blend: data.pixelate.blend
 		};
 		this.pico.lensDistortion = { ...data.lensDistortion };
+		this.pico.floorReflection = {
+			...data.floorReflection,
+			color: hexToRGB(data.floorReflection.color)
+		};
 	}
 
 	private addEventListeners() {

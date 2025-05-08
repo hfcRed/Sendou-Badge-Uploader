@@ -643,6 +643,55 @@
 		/>
 	{/if}
 </fieldset>
+<hr />
+<fieldset>
+	<legend>
+		<label>
+			<input
+				type="checkbox"
+				bind:checked={viewer.shader.floorReflection.enabled}
+				aria-checked={viewer.shader.floorReflection.enabled}
+				oninput={(e) => (viewer.pico.floorReflection.enabled = e.currentTarget.checked)}
+			/>
+			<h4>Floor Reflection</h4>
+		</label>
+	</legend>
+	{#if viewer.shader.floorReflection.enabled}
+		<NumericControl
+			label={'Opacity'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.floorReflection.opacity}
+			oninput={(e) => (viewer.pico.floorReflection.opacity = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Height'}
+			min={-10}
+			max={10}
+			step={0.01}
+			bind:value={viewer.shader.floorReflection.height}
+			oninput={(e) => (viewer.pico.floorReflection.height = parseFloat(e.currentTarget.value))}
+		/>
+		<NumericControl
+			label={'Fade Distance'}
+			min={0}
+			max={10}
+			step={0.01}
+			bind:value={viewer.shader.floorReflection.fadeDistance}
+			oninput={(e) =>
+				(viewer.pico.floorReflection.fadeDistance = parseFloat(e.currentTarget.value))}
+		/>
+		<label>
+			Color
+			<input
+				type="color"
+				bind:value={viewer.shader.floorReflection.color}
+				oninput={(e) => (viewer.pico.floorReflection.color = hexToRGB(e.currentTarget.value))}
+			/>
+		</label>
+	{/if}
+</fieldset>
 <h3>HD Effects</h3>
 <fieldset disabled={!viewer.shader.usingHDTexture}>
 	<legend>
