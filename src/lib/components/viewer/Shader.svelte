@@ -540,10 +540,31 @@
 		<NumericControl
 			label={'Pixel Size'}
 			min={1}
-			max={5}
+			max={10}
 			step={1}
 			bind:value={viewer.shader.pixelate.pixelSize}
 			oninput={(e) => (viewer.pico.pixelate.pixelSize = parseFloat(e.currentTarget.value))}
+		/>
+		<label>
+			Shape
+			<select
+				bind:value={viewer.shader.pixelate.shape}
+				onchange={(e) => (viewer.pico.pixelate.shape = e.currentTarget.value)}
+			>
+				<option value="square">Square</option>
+				<option value="hex">Hex</option>
+				<option value="diamond">Diamond</option>
+				<option value="circle">Circle</option>
+				<option value="triangle">Triangle</option>
+			</select>
+		</label>
+		<NumericControl
+			label={'Blend'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.pixelate.blend}
+			oninput={(e) => (viewer.pico.pixelate.blend = parseFloat(e.currentTarget.value))}
 		/>
 	{/if}
 </fieldset>

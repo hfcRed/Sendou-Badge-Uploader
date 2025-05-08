@@ -200,11 +200,13 @@ export class PicoCADViewer {
 		};
 		/**
 		 * Pixelate options.
-		 * @type {{enabled: boolean, pixelSize: number}}
+		 * @type {{enabled: boolean, pixelSize: number, shape?: string, blend?: number}}
 		 */
 		this.pixelate = {
 			enabled: false,
 			pixelSize: 1,
+			shape: "square", // "square" or "hex"
+			blend: 1.0,      // 0 = no pixelation, 1 = full pixelation
 		};
 		/**
 		 * Lens distortion options.
@@ -1619,6 +1621,8 @@ export class PicoCADViewer {
 			gl.uniform1i(prog.locations.mainTex, 0);
 			gl.uniform1f(prog.locations.pixelSize, this.pixelate.pixelSize);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
+			gl.uniform1i(prog.locations.shape, this.pixelate.shape === "hex" ? 1 : this.pixelate.shape === "circle" ? 2 : this.pixelate.shape === "diamond" ? 3 : this.pixelate.shape === "triangle" ? 4 : 0);
+			gl.uniform1f(prog.locations.blend, this.pixelate.blend);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -2951,11 +2955,98 @@ function createPixelateProgram(gl) {
 		uniform sampler2D mainTex;
 		uniform highp float pixelSize;
 		uniform highp vec2 resolution;
+		uniform highp float blend;
+		uniform int shape;
+
+		highp vec2 hexRound(highp vec2 h) {
+            highp float q = floor(h.x + 0.5);
+            highp float r = floor(h.y + 0.5);
+            highp float s = floor(-h.x - h.y + 0.5);
+
+            highp float dq = abs(q - h.x);
+            highp float dr = abs(r - h.y);
+            highp float ds = abs(s + h.x + h.y);
+
+            if (dq > dr && dq > ds) q = -r - s;
+            else if (dr > ds) r = -q - s;
+            else s = -q - r;
+
+            return vec2(q, r);
+        }
+
+		bool pointInTriangle(highp vec2 p, highp vec2 a, highp vec2 b, highp vec2 c) {
+			highp vec2 v0 = c - a;
+			highp vec2 v1 = b - a;
+			highp vec2 v2 = p - a;
+
+			highp float dot00 = dot(v0, v0);
+			highp float dot01 = dot(v0, v1);
+			highp float dot02 = dot(v0, v2);
+			highp float dot11 = dot(v1, v1);
+			highp float dot12 = dot(v1, v2);
+
+			highp float invDenom = 1.0 / (dot00 * dot11 - dot01 * dot01);
+			highp float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+			highp float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+			return (u >= 0.0) && (v >= 0.0) && (u + v <= 1.0);
+		}
 
 		void main() {
-			highp vec2 uv = floor(v_uv * resolution / pixelSize) * pixelSize / resolution;
-			highp vec4 col = texture2D(mainTex, uv);
-			gl_FragColor = col;
+			highp vec2 uv = v_uv;
+			highp vec2 px = uv * resolution;
+			highp vec2 sampleUV = uv;
+
+			if (shape == 1) {
+				highp float size = pixelSize;
+				highp float w = sqrt(3.0) * size;
+				highp float h = 1.5 * size;
+				highp float q = (px.x * sqrt(3.0)/3.0 - px.y / 3.0) / size;
+				highp float r = px.y * 2.0/3.0 / size;
+
+				highp vec2 hexCoord = hexRound(vec2(q, r));
+				highp float x = size * sqrt(3.0) * (hexCoord.x + hexCoord.y/2.0);
+				highp float y = size * 1.5 * hexCoord.y;
+
+				sampleUV = vec2(x, y) / resolution;
+			} else if (shape == 2) {
+				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
+				highp float dist = length(px - center);
+
+				if (dist > pixelSize * 0.5) {
+					sampleUV = uv;
+				} else {
+					sampleUV = center / resolution;
+				}
+			} else if (shape == 3) {
+				highp vec2 center = (floor(px / pixelSize) + 0.5) * pixelSize;
+				highp vec2 rel = abs(px - center);
+
+				if (rel.x + rel.y > pixelSize * 0.5) {
+					sampleUV = uv;
+				} else {
+					sampleUV = center / resolution;
+				}
+			} else if (shape == 4) {
+				highp float size = pixelSize;
+				
+				highp vec2 base = floor(px / size) * size;
+				highp vec2 a = base + vec2(size * 0.5, 0.0);
+				highp vec2 b = base + vec2(0.0, size);
+				highp vec2 c = base + vec2(size, size);
+
+				if (pointInTriangle(px, a, b, c)) {
+					sampleUV = (a + b + c) / 3.0 / resolution;
+				} else {
+					sampleUV = uv;
+				}
+			} else {
+				sampleUV = floor(px / pixelSize) * pixelSize / resolution;
+			}
+
+			highp vec4 col = texture2D(mainTex, sampleUV);
+			highp vec4 orig = texture2D(mainTex, uv);
+			gl_FragColor = vec4(mix(orig, col, clamp(blend, 0.0, 1.0)).rgb, 1.0);
 		}
 	`);
 	return {
@@ -2964,6 +3055,8 @@ function createPixelateProgram(gl) {
 			mainTex: program.getUniformLocation("mainTex"),
 			pixelSize: program.getUniformLocation("pixelSize"),
 			resolution: program.getUniformLocation("resolution"),
+			shape: program.getUniformLocation("shape"),
+			blend: program.getUniformLocation("blend"),
 		}
 	};
 }

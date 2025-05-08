@@ -118,6 +118,8 @@ interface ShaderSettings {
 	pixelate: {
 		enabled: boolean;
 		pixelSize: number;
+		shape: string;
+		blend: number;
 	};
 	lensDistortion: {
 		enabled: boolean;
@@ -223,7 +225,9 @@ export class Viewer {
 		},
 		pixelate: {
 			enabled: false,
-			pixelSize: 1
+			pixelSize: 1,
+			shape: 'square',
+			blend: 1.0
 		},
 		lensDistortion: {
 			enabled: false,
@@ -537,7 +541,11 @@ export class Viewer {
 		this.pico.bloom = { ...data.bloom };
 		this.pico.dither = { ...data.dither };
 		this.pico.crt = { ...data.crt };
-		this.pico.pixelate = { ...data.pixelate };
+		this.pico.pixelate = {
+			...data.pixelate,
+			shape: data.pixelate.shape ?? 'square',
+			blend: data.pixelate.blend ?? 1.0
+		};
 		this.pico.lensDistortion = { ...data.lensDistortion };
 	}
 
