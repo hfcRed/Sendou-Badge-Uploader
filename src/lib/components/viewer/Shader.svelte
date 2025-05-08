@@ -489,6 +489,14 @@
 			bind:value={viewer.shader.dither.amount}
 			oninput={(e) => (viewer.pico.dither.amount = parseFloat(e.currentTarget.value))}
 		/>
+		<NumericControl
+			label={'Blend'}
+			min={0}
+			max={1}
+			step={0.01}
+			bind:value={viewer.shader.dither.blend}
+			oninput={(e) => (viewer.pico.dither.blend = parseFloat(e.currentTarget.value))}
+		/>
 	{/if}
 </fieldset>
 <hr />

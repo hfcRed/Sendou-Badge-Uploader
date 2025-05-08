@@ -109,6 +109,7 @@ interface ShaderSettings {
 	dither: {
 		enabled: boolean;
 		amount: number;
+		blend: number;
 	};
 	crt: {
 		enabled: boolean;
@@ -216,7 +217,8 @@ export class Viewer {
 		},
 		dither: {
 			enabled: false,
-			amount: 0.5
+			amount: 0.5,
+			blend: 1.0
 		},
 		crt: {
 			enabled: false,
