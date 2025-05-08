@@ -497,6 +497,39 @@
 			bind:value={viewer.shader.dither.blend}
 			oninput={(e) => (viewer.pico.dither.blend = parseFloat(e.currentTarget.value))}
 		/>
+		<NumericControl
+			label={'Red Channel'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.dither.channelAmount[0]}
+			oninput={(e) => {
+				viewer.shader.dither.channelAmount[0] = parseFloat(e.currentTarget.value);
+				viewer.pico.dither.channelAmount = [...viewer.shader.dither.channelAmount];
+			}}
+		/>
+		<NumericControl
+			label={'Green Channel'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.dither.channelAmount[1]}
+			oninput={(e) => {
+				viewer.shader.dither.channelAmount[1] = parseFloat(e.currentTarget.value);
+				viewer.pico.dither.channelAmount = [...viewer.shader.dither.channelAmount];
+			}}
+		/>
+		<NumericControl
+			label={'Blue Channel'}
+			min={0}
+			max={2}
+			step={0.01}
+			bind:value={viewer.shader.dither.channelAmount[2]}
+			oninput={(e) => {
+				viewer.shader.dither.channelAmount[2] = parseFloat(e.currentTarget.value);
+				viewer.pico.dither.channelAmount = [...viewer.shader.dither.channelAmount];
+			}}
+		/>
 	{/if}
 </fieldset>
 <hr />

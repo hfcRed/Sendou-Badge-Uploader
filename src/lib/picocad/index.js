@@ -183,12 +183,13 @@ export class PicoCADViewer {
 		};
 		/**
 		 * Dither options.
-		 * @type {{enabled: boolean, amount: number, blend: number}}
+		 * @type {{enabled: boolean, amount: number, blend: number, channelAmount: number[]}}
 		 */
 		this.dither = {
 			enabled: false,
 			amount: 0.5,
 			blend: 1.0,
+			channelAmount: [1, 1, 1],
 		};
 		/**
 		 * CRT options.
@@ -1582,6 +1583,7 @@ export class PicoCADViewer {
 			gl.uniform1f(prog.locations.amount, this.dither.amount);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
 			gl.uniform1f(prog.locations.blend, this.dither.blend);
+			gl.uniform3fv(prog.locations.channelAmount, this.dither.channelAmount);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
 			gl.vertexAttribPointer(prog.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
@@ -2850,6 +2852,7 @@ function createDitherProgram(gl) {
 		uniform highp float amount;
 		uniform highp vec2 resolution;
 		uniform highp float blend;
+		uniform highp vec3 channelAmount;
 
 		highp float bayer4x4(int x, int y) {
 			if (x == 0 && y == 0) return 0.0;
@@ -2879,9 +2882,12 @@ function createDitherProgram(gl) {
 			int xi = int(mod(pos.x, 4.0));
 			int yi = int(mod(pos.y, 4.0));
 
-			highp float threshold = (bayer4x4(xi, yi) + 0.5) / 16.0 * amount;
+			highp float baseThreshold = (bayer4x4(xi, yi) + 0.5) / 16.0 * amount;
 
-			col.rgb = floor(col.rgb + threshold);
+			col.r = floor(col.r + baseThreshold * channelAmount.r);
+			col.g = floor(col.g + baseThreshold * channelAmount.g);
+			col.b = floor(col.b + baseThreshold * channelAmount.b);
+
 			gl_FragColor = vec4(mix(orig.rgb, col.rgb, clamp(blend, 0.0, 1.0)), orig.a);
 		}
 	`);
@@ -2892,6 +2898,7 @@ function createDitherProgram(gl) {
 			amount: program.getUniformLocation("amount"),
 			resolution: program.getUniformLocation("resolution"),
 			blend: program.getUniformLocation("blend"),
+			channelAmount: program.getUniformLocation("channelAmount"),
 		}
 	};
 }

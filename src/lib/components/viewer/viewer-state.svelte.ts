@@ -110,6 +110,7 @@ interface ShaderSettings {
 		enabled: boolean;
 		amount: number;
 		blend: number;
+		channelAmount: [number, number, number];
 	};
 	crt: {
 		enabled: boolean;
@@ -218,7 +219,8 @@ export class Viewer {
 		dither: {
 			enabled: false,
 			amount: 0.5,
-			blend: 1.0
+			blend: 1.0,
+			channelAmount: [1, 1, 1]
 		},
 		crt: {
 			enabled: false,
@@ -541,7 +543,10 @@ export class Viewer {
 		this.pico.posterize = { ...data.posterize };
 		this.pico.noise = { ...data.noise };
 		this.pico.bloom = { ...data.bloom };
-		this.pico.dither = { ...data.dither };
+		this.pico.dither = {
+			...data.dither,
+			channelAmount: data.dither.channelAmount ?? [1, 1, 1]
+		};
 		this.pico.crt = { ...data.crt };
 		this.pico.pixelate = {
 			...data.pixelate,
