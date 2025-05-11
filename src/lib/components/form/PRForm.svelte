@@ -87,10 +87,6 @@
 						</label>
 						<label>
 							<input type="checkbox" form="badge" required />
-							<span>Rotation speed matches overlay speed</span>
-						</label>
-						<label>
-							<input type="checkbox" form="badge" required />
 							<span>Model centered vertically and horizontally</span>
 						</label>
 						<label>

@@ -72,13 +72,9 @@
 <hr />
 <fieldset>
 	<legend><h3>Utilities</h3></legend>
-	<label>
+	<label class="form-margin">
 		<input type="checkbox" role="switch" bind:checked={viewer.viewport.rulers} />
 		Rulers
-	</label>
-	<label class="form-margin">
-		<input type="checkbox" role="switch" bind:checked={viewer.viewport.rotationOverlay} />
-		Rotation Overlay
 	</label>
 	<button
 		type="button"
