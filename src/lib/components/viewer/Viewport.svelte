@@ -68,13 +68,6 @@
 		<input type="checkbox" role="switch" bind:checked={viewer.viewport.turntable} />
 		Turntable
 	</label>
-	<NumericControl
-		label="Turntable Speed"
-		min={0}
-		max={3}
-		step={0.01}
-		bind:value={viewer.viewport.turntableSpeed}
-	/>
 </fieldset>
 <hr />
 <fieldset>

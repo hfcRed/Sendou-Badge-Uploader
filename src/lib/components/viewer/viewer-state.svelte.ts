@@ -352,7 +352,7 @@ export class Viewer {
 		if (this.viewport.turntable) {
 			if (this.gif.recording) {
 				delta = 0.02;
-				this.viewport.cameraRotation += delta * this.viewport.turntableSpeed;
+				this.viewport.cameraRotation += delta * 2;
 			} else {
 				this.viewport.cameraRotation = parseFloat(
 					(
