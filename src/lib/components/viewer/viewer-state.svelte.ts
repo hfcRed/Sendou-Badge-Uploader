@@ -645,7 +645,7 @@ export class Viewer {
 			wheel: ((e: WheelEvent) => {
 				e.preventDefault();
 
-				const zoomAmount = e.deltaY * 0.001;
+				const zoomAmount = e.deltaY * 0.02;
 				this.viewport.cameraDistance = parseFloat(
 					Math.max(Math.min(this.viewport.cameraDistance + zoomAmount, 100), 0).toFixed(2)
 				);
