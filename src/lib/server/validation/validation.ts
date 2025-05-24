@@ -76,17 +76,6 @@ export async function validateUpdateRequest(
 		};
 	}
 
-	if (result.output.updateType === 'existing' && !result.output.updateName) {
-		return {
-			success: false,
-			error: fail(400, {
-				success: false,
-				for: 'update',
-				message: 'Please provide the name of the badge you want to update!'
-			})
-		};
-	}
-
 	if (!validateFileNames(result.output)) {
 		return {
 			success: false,

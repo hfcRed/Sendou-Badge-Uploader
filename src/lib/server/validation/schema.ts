@@ -26,7 +26,7 @@ export const CreateSchema = v.object({
 	avif: v.file()
 });
 
-export const UpdateSchema = v.object({
+const UpdateBaseSchema = v.object({
 	...CreateSchema.entries,
 	prUrl: v.pipe(
 		v.string(),
@@ -36,10 +36,14 @@ export const UpdateSchema = v.object({
 		v.trim(),
 		v.url(),
 		v.startsWith('https://github.com/')
-	),
-	updateType: v.picklist(['existing', 'new']),
-	updateName: v.optional(
-		v.pipe(
+	)
+});
+
+export const UpdateSchema = v.variant('updateType', [
+	v.object({
+		...UpdateBaseSchema.entries,
+		updateType: v.literal('existing'),
+		updateName: v.pipe(
 			v.string(),
 			v.nonEmpty(),
 			v.minLength(5),
@@ -48,5 +52,9 @@ export const UpdateSchema = v.object({
 			v.toLowerCase(),
 			v.regex(/^[a-zA-Z0-9]+$/)
 		)
-	)
-});
+	}),
+	v.object({
+		...UpdateBaseSchema.entries,
+		updateType: v.literal('new')
+	})
+]);
