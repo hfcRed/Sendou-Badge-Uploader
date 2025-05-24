@@ -2,15 +2,14 @@
 	import { page } from '$app/state';
 	import { Tabs } from 'bits-ui';
 	import { viewer } from './viewer/viewer-state.svelte';
-	import { handleInputChange } from '$lib/utilities';
+	import { handleInputChange, createAvifLink } from '$lib/utilities';
 
 	interface Props {
 		submitting: boolean;
 		shorthandName: string;
-		createAvifLink: () => Promise<string>;
 	}
 
-	let { submitting, shorthandName, createAvifLink }: Props = $props();
+	let { submitting, shorthandName }: Props = $props();
 
 	let { form, data } = $derived(page);
 	let updateType = $state('existing');
@@ -31,7 +30,7 @@
 				link.click();
 				break;
 			case 'avif':
-				const avifUrl = await createAvifLink();
+				const avifUrl = await createAvifLink(viewer.selectedImage?.url ?? '');
 
 				link.href = avifUrl;
 				link.download = `${name}.avif`;

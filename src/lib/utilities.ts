@@ -1,3 +1,4 @@
+import { encode } from '@jsquash/avif';
 import { PICO_COLORS } from './picocad/pico';
 
 export function isPico8Texture(data: ImageData) {
@@ -51,4 +52,24 @@ export function handleInputChange(
 	} else {
 		e.currentTarget.setAttribute('aria-invalid', 'false');
 	}
+}
+
+export async function createAvifLink(url: string) {
+	const img = document.createElement('img');
+	img.src = url;
+	await new Promise((resolve) => (img.onload = resolve));
+
+	const canvas = document.createElement('canvas');
+	[canvas.width, canvas.height] = [img.width, img.height];
+	const ctx = canvas.getContext('2d')!;
+	ctx.drawImage(img, 0, 0);
+
+	const data = ctx.getImageData(0, 0, img.width, img.height);
+	const avifBuffer = await encode(data);
+	const avifBlob = new Blob([avifBuffer], { type: 'image/avif' });
+
+	img.remove();
+	canvas.remove();
+
+	return URL.createObjectURL(avifBlob);
 }
