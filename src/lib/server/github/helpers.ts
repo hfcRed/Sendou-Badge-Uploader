@@ -184,7 +184,7 @@ export async function createBranch(
 	});
 }
 
-export async function createForkIfNeeded(username: string, headers: GitHubApiHeaders) {
+export async function createForkOrSyncExisting(username: string, headers: GitHubApiHeaders) {
 	const repos = await fetch(`${BASE_URL}/users/${username}/repos`, {
 		method: 'GET',
 		headers
@@ -200,7 +200,37 @@ export async function createForkIfNeeded(username: string, headers: GitHubApiHea
 		});
 
 		await new Promise((resolve) => setTimeout(resolve, 5000));
+	} else {
+		await fetch(`${BASE_URL}/repos/${username}/${REPO_NAME}/merge-upstream`, {
+			method: 'POST',
+			headers,
+			body: JSON.stringify({
+				branch: BASE_BRANCH
+			})
+		});
 	}
+}
+
+export async function mergeBaseBranchIntoFeatureBranch(
+	username: string,
+	branchName: string,
+	headers: GitHubApiHeaders
+) {
+	const baseBranch = await fetch(
+		`https://api.github.com/repos/${username}/${REPO_NAME}/branches/${BASE_BRANCH}`,
+		{ headers }
+	);
+	const baseBranchJson = await baseBranch.json();
+
+	await fetch(`https://api.github.com/repos/${username}/${REPO_NAME}/merges`, {
+		method: 'POST',
+		headers,
+		body: JSON.stringify({
+			base: branchName,
+			head: baseBranchJson.commit.sha,
+			commit_message: `Merge ${BASE_BRANCH} into ${branchName}`
+		})
+	});
 }
 
 export async function createPullRequest(

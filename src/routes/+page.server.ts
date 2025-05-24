@@ -8,11 +8,12 @@ import {
 	updateBadgesFile,
 	uploadFile,
 	deleteFile,
-	createForkIfNeeded,
+	createForkOrSyncExisting,
 	createBranch,
 	createPullRequest,
 	getPullRequestDetails,
-	getUserData
+	getUserData,
+	mergeBaseBranchIntoFeatureBranch
 } from '$lib/server/github/helpers';
 import {
 	fetchCreatorDiscordId,
@@ -85,7 +86,7 @@ export const actions = {
 			const newBadgeJson = insertNewBadge(badgesJson, shorthandName, newBadge);
 			const newBadgeFile = JSON.stringify(newBadgeJson, null, '\t') + '\n';
 
-			await createForkIfNeeded(username, headers);
+			await createForkOrSyncExisting(username, headers);
 			await createBranch(username, shorthandName, headers);
 
 			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
@@ -177,6 +178,9 @@ export const actions = {
 			}
 
 			const branchName = prJson.head.ref;
+
+			await createForkOrSyncExisting(username, headers);
+			await mergeBaseBranchIntoFeatureBranch(username, branchName, headers);
 
 			const badgesFile = await fetchBadgesFile(username, branchName, headers);
 			const badgesJson = JSON.parse(atob(badgesFile.content));
