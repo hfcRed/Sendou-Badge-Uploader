@@ -4,8 +4,21 @@
 	import '../styles/global.css';
 
 	import Logo from '$lib/components/Logo.svelte';
+	import { onNavigate } from '$app/navigation';
 
 	let { children } = $props();
+
+	onNavigate((navigation) => {
+		if (!document.startViewTransition) return;
+		if (navigation.to.url.pathname === navigation.from.url.pathname) return;
+
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
+	});
 </script>
 
 <header>
@@ -57,5 +70,23 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	@keyframes slide {
+		from {
+			transform: translateY(100vh);
+		}
+	}
+
+	:root::view-transition-old(root) {
+		animation: none;
+	}
+
+	:root::view-transition-new(root) {
+		animation: 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide;
+	}
+
+	header {
+		view-transition-name: heading;
 	}
 </style>
