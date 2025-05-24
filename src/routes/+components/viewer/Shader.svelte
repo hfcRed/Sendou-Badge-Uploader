@@ -2,7 +2,7 @@
 	import type { PicoCADRenderMode } from '$lib/picocad';
 	import { hexToRGB } from '$lib/utilities';
 	import { viewer } from './viewer-state.svelte';
-	import NumericControl from '../NumericControl.svelte';
+	import NumericControl from '../../../lib/components/NumericControl.svelte';
 </script>
 
 <h3>Rendering</h3>

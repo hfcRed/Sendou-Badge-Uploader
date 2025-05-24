@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { viewer } from './viewer-state.svelte';
-	import NumericControl from '../NumericControl.svelte';
-	import Dialog from '../Dialog.svelte';
+	import NumericControl from '$lib/components/NumericControl.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import Shortcuts from './Shortcuts.svelte';
 
 	function getModelCenter() {

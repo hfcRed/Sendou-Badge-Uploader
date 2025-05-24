@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { applyAction, deserialize } from '$app/forms';
 	import { encode } from '@jsquash/avif';
-	import { viewer } from '$lib/components/viewer/viewer-state.svelte.js';
-	import Viewer from '$lib/components/viewer/Viewer.svelte';
-	import DataForm from '$lib/components/form/DataForm.svelte';
-	import PRForm from '$lib/components/form/PRForm.svelte';
+	import { viewer } from './+components/viewer/viewer-state.svelte.js';
+	import Viewer from './+components/viewer/Viewer.svelte';
+	import DataForm from './+components/DataForm.svelte';
+	import PRForm from './+components/PRForm.svelte';
 
 	let shorthandName = $state('');
 	let submitting = $state(false);

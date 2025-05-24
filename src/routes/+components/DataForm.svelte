@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { SuperGif } from '@wizpanda/super-gif';
-	import { viewer } from '../viewer/viewer-state.svelte';
+	import { viewer } from './viewer/viewer-state.svelte';
 	import { handleInputChange } from '$lib/utilities';
 
 	let { shorthandName = $bindable('') } = $props();
