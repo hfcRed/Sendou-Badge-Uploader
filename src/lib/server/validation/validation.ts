@@ -101,20 +101,6 @@ export async function validateUpdateRequest(
 	return { success: true, output: result.output };
 }
 
-export function checkUserAuthentication(locals: App.Locals): ValidationResult<App.Locals['user']> {
-	if (!locals.user) {
-		return {
-			success: false,
-			error: fail(401, {
-				success: false,
-				for: 'create',
-				message: 'You must be logged into GitHub to open a Pull Request!'
-			})
-		};
-	}
-	return { success: true, output: locals.user };
-}
-
 export function validateFileNames(data: {
 	shorthandName: string;
 	gif: File;
@@ -127,4 +113,18 @@ export function validateFileNames(data: {
 		data.png.name === `${shortName}.png` &&
 		data.avif.name === `${shortName}.avif`
 	);
+}
+
+export function checkUserAuthentication(locals: App.Locals): ValidationResult<App.Locals['user']> {
+	if (!locals.user) {
+		return {
+			success: false,
+			error: fail(401, {
+				success: false,
+				for: 'create',
+				message: 'You must be logged into GitHub to open a Pull Request!'
+			})
+		};
+	}
+	return { success: true, output: locals.user };
 }
