@@ -1,6 +1,6 @@
 import * as v from 'valibot';
 import { fail, type ActionFailure } from '@sveltejs/kit';
-import { CreateSchema, UpdateSchema } from './schema';
+import { CreateSchema, UpdateSchema, type UpdateOutput, type CreateOutput } from './schema';
 
 export interface ValidationError extends Record<string, unknown> {
 	success: false;
@@ -12,25 +12,9 @@ export type ValidationResult<T> =
 	| { success: true; output: T }
 	| { success: false; error: ActionFailure<ValidationError> };
 
-export interface CreateRequestOutput {
-	shorthandName: string;
-	displayName: string;
-	creator: string;
-	notes?: string;
-	gif: File;
-	png: File;
-	avif: File;
-}
-
-export interface UpdateRequestOutput extends CreateRequestOutput {
-	updateType: 'existing' | 'new';
-	updateName?: string;
-	prUrl: string;
-}
-
 export async function validateCreateRequest(
 	request: Request
-): Promise<ValidationResult<CreateRequestOutput>> {
+): Promise<ValidationResult<CreateOutput>> {
 	const formData = await request.formData();
 	const result = v.safeParse(CreateSchema, Object.fromEntries(formData.entries()));
 
@@ -61,7 +45,7 @@ export async function validateCreateRequest(
 
 export async function validateUpdateRequest(
 	request: Request
-): Promise<ValidationResult<UpdateRequestOutput>> {
+): Promise<ValidationResult<UpdateOutput>> {
 	const formData = await request.formData();
 	const result = v.safeParse(UpdateSchema, Object.fromEntries(formData.entries()));
 

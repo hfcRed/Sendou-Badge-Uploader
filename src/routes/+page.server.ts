@@ -138,6 +138,7 @@ export const actions = {
 
 			const { shorthandName, displayName, creator, gif, png, avif, updateType, updateName, prUrl } =
 				result.output;
+
 			const username = locals.user.name;
 			const headers = createGitHubHeaders(locals.user.token);
 

@@ -55,6 +55,10 @@ export const UpdateSchema = v.variant('updateType', [
 	}),
 	v.object({
 		...UpdateBaseSchema.entries,
-		updateType: v.literal('new')
+		updateType: v.literal('new'),
+		updateName: v.null()
 	})
 ]);
+
+export type CreateOutput = v.InferOutput<typeof CreateSchema>;
+export type UpdateOutput = v.InferOutput<typeof UpdateSchema>;
