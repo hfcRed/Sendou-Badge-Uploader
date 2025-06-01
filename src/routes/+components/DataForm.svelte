@@ -117,6 +117,7 @@
 					form="badge"
 					autocomplete="off"
 					autocorrect="off"
+					pattern="[\u0000-\u024F]*"
 					onchange={(e) => handleInputChange(e)}
 				/>
 				<small
