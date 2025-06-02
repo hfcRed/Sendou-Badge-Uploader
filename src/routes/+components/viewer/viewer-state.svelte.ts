@@ -552,26 +552,20 @@ export class Viewer {
 			colorTo: hexToRGB(data.outlineB.colorTo)
 		};
 
+		this.pico.floorReflection = {
+			...data.floorReflection,
+			color: hexToRGB(data.floorReflection.color)
+		};
+
 		this.pico.chromaticAberration = { ...data.chromaticAberration };
 		this.pico.colorGrading = { ...data.colorGrading };
 		this.pico.posterize = { ...data.posterize };
 		this.pico.noise = { ...data.noise };
 		this.pico.bloom = { ...data.bloom };
-		this.pico.dither = {
-			...data.dither,
-			channelAmount: data.dither.channelAmount ?? [1, 1, 1]
-		};
+		this.pico.dither = { ...data.dither };
 		this.pico.crt = { ...data.crt };
-		this.pico.pixelate = {
-			...data.pixelate,
-			shape: data.pixelate.shape,
-			blend: data.pixelate.blend
-		};
+		this.pico.pixelate = { ...data.pixelate };
 		this.pico.lensDistortion = { ...data.lensDistortion };
-		this.pico.floorReflection = {
-			...data.floorReflection,
-			color: hexToRGB(data.floorReflection.color)
-		};
 	}
 
 	private addEventListeners() {
