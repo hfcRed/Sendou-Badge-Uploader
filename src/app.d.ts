@@ -5,9 +5,13 @@ declare global {
 		// interface Error {}
 		// interface PageData {}
 		// interface PageState {}
-		// interface Platform {}
 		interface Locals {
 			user: GithubLogin;
+		}
+		interface Platform {
+			env: Env;
+			cf: CfProperties;
+			ctx: ExecutionContext;
 		}
 	}
 }

@@ -7,12 +7,14 @@
 		"preinstall": "npx only-allow pnpm",
 		"dev": "vite dev",
 		"build": "vite build",
-		"preview": "vite preview",
+		"preview": "pnpm run build && wrangler dev",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
-		"lint": "prettier --check . && eslint ."
+		"lint": "prettier --check . && eslint .",
+		"deploy": "pnpm run build && wrangler deploy",
+		"cf-typegen": "wrangler types ./src/worker-configuration.d.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.9",
@@ -30,7 +32,8 @@
 		"svelte-check": "^4.2.1",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.33.1",
-		"vite": "^6.3.5"
+		"vite": "^6.3.5",
+		"wrangler": "^4.18.0"
 	},
 	"dependencies": {
 		"@jsquash/avif": "^2.1.1",
@@ -39,5 +42,10 @@
 		"bits-ui": "^1.8.0",
 		"gl-matrix": "^3.4.3",
 		"valibot": "^1.1.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
 	}
 }

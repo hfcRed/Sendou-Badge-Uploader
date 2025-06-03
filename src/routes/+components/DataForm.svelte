@@ -7,6 +7,8 @@
 
 	let initSG = $state(false);
 
+	$inspect(viewer.images.generated);
+
 	async function splitGifIntoFrames() {
 		viewer.images = {
 			generating: true,

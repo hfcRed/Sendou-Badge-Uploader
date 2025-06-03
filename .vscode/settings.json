@@ -27,5 +27,8 @@
 		"**/routes/+error.svelte": "root ❱ Error",
 		"**/routes/**/*/+server.[tj]s": "${dirname} ❱ API",
 		"**/routes/+server.[tj]s": "root ❱ API"
+	},
+	"files.associations": {
+		"wrangler.json": "jsonc"
 	}
 }
