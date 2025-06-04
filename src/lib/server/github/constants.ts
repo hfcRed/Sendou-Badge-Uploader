@@ -11,7 +11,7 @@ const dev = import.meta.env.DEV;
 
 const CALLBACK_URL = dev
 	? 'http://localhost:5173/login/callback'
-	: 'https://sendou-badge-uploader.pages.dev/login/callback';
+	: 'https://sendou-badge-uploader.hfcred.workers.dev/login/callback';
 
 export const BASE_URL = 'https://api.github.com';
 export const BASE_BRANCH = dev ? 'main' : 'rewrite';
