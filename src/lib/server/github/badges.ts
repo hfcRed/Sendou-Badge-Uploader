@@ -4,13 +4,12 @@ export interface BadgeInfo {
 }
 
 export async function fetchCreatorDiscordId(creatorUrl: string) {
-	const creator = await fetch(`${creatorUrl}.data`, {
-		headers: {
-			'User-Agent': 'Sendou Badge Uploader'
-		}
-	});
+	const creator = await fetch(
+		`${creatorUrl}?_data=features%2Fuser-page%2Froutes%2Fu.%24identifier`
+	);
+
 	const creatorJson = await creator.json();
-	return creatorJson[creatorJson.indexOf('discordId') + 1];
+	return creatorJson.user.discordId;
 }
 
 export function checkBadgeNameExists(badgesJson: { string: BadgeInfo }, shortName: string) {
