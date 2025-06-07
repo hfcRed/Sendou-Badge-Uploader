@@ -88,6 +88,7 @@ export const actions = {
 
 			await createForkOrSyncExisting(username, headers);
 			await createBranch(username, shorthandName, headers);
+			await mergeBaseBranchIntoFeatureBranch(username, shorthandName, headers);
 
 			const forkBadgesJson = await fetchBadgesFile(username, shorthandName, headers);
 			await updateBadgesFile(username, shorthandName, newBadgeFile, forkBadgesJson.sha, headers);
