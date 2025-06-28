@@ -56,7 +56,7 @@ export const UpdateSchema = v.variant('updateType', [
 	v.object({
 		...UpdateBaseSchema.entries,
 		updateType: v.literal('new'),
-		updateName: v.null()
+		updateName: v.optional(v.string())
 	})
 ]);
 
