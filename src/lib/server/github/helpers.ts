@@ -69,7 +69,7 @@ export async function updateBadgesFile(
 		method: 'PUT',
 		headers,
 		body: JSON.stringify({
-			message: `Update homemade.ts file`,
+			message: `Update homemade.json file`,
 			branch: branch,
 			content: btoa(content),
 			sha: sha
@@ -245,7 +245,7 @@ export async function createPullRequest(
 		method: 'POST',
 		headers,
 		body: JSON.stringify({
-			title: `Add badge for ${displayName}`,
+			title: `Badge: Add badge for ${displayName}`,
 			head: `${username}:${branchName}`,
 			base: BASE_BRANCH,
 			body: `This PR adds the badge for the tournament ${displayName}. \n\n**Creator:**\n${creator}${notes ? `\n\n**Notes:**\n${notes}` : ''}\n\n###### PR created automatically via Badge Uploader`
