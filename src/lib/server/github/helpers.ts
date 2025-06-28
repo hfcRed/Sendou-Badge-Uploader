@@ -245,7 +245,7 @@ export async function createPullRequest(
 		method: 'POST',
 		headers,
 		body: JSON.stringify({
-			title: `Badge: Add badge for ${displayName}`,
+			title: `badge: add badge for ${displayName}`,
 			head: `${username}:${branchName}`,
 			base: BASE_BRANCH,
 			body: `This PR adds the badge for the tournament ${displayName}. \n\n**Creator:**\n${creator}${notes ? `\n\n**Notes:**\n${notes}` : ''}\n\n###### PR created automatically via Badge Uploader`
