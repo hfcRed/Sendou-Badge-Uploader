@@ -14,8 +14,8 @@ const CALLBACK_URL = dev
 	: 'https://sendou-badge-uploader.hfcred.workers.dev/login/callback';
 
 export const BASE_URL = 'https://api.github.com';
-export const BASE_BRANCH = dev ? 'main' : 'rewrite';
-export const REPO_OWNER = dev ? 'hfcRed' : 'Sendouc';
+export const BASE_BRANCH = dev ? 'main' : 'main';
+export const REPO_OWNER = dev ? 'hfcRed' : 'sendou-ink';
 export const REPO_NAME = dev ? 'PR-Testing' : 'sendou.ink';
 export const FILE_PATH = dev ? 'homemade.json' : 'app/features/badges/homemade.json';
 export const DIRECTORY = dev ? 'badges' : 'public/static-assets/badges';
