@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PicoCADRenderMode } from '$lib/picocad';
 	import { hexToRGB } from '$lib/utilities';
-	import { viewer } from './viewer-state.svelte';
+	import { viewer } from '../../+states/viewer-state.svelte';
 	import NumericControl from '../../../lib/components/NumericControl.svelte';
 </script>
 

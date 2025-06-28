@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { viewer } from './viewer-state.svelte';
+	import { viewer } from '../../+states/viewer-state.svelte';
 	import { urlCompressModel, urlDecompressModel } from '$lib/picocad/model-compression';
 
 	interface SavedModel {

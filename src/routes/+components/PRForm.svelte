@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Tabs } from 'bits-ui';
-	import { viewer } from './viewer/viewer-state.svelte';
+	import { viewer } from '../+states/viewer-state.svelte';
 	import { handleInputChange, createAvifLink } from '$lib/utilities';
 
 	interface Props {

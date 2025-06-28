@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Tabs } from 'bits-ui';
-	import { viewer } from './viewer-state.svelte';
+	import { viewer } from '../../+states/viewer-state.svelte';
 	import rotationGif from '$lib/picocad/files/rotation-overlay.gif';
 	import Ruler from './Ruler.svelte';
 	import Viewport from './Viewport.svelte';

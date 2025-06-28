@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { applyAction, deserialize } from '$app/forms';
-	import { viewer } from './+components/viewer/viewer-state.svelte.js';
+	import { viewer } from './+states/viewer-state.svelte.js';
 	import { createAvifLink } from '$lib/utilities.js';
 	import Viewer from './+components/viewer/Viewer.svelte';
 	import DataForm from './+components/DataForm.svelte';
