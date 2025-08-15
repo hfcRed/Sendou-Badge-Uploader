@@ -57,7 +57,6 @@ export function handleInputChange(
 export async function createAvifLink(url: string) {
 	const img = document.createElement('img');
 	img.src = url;
-
 	await new Promise((resolve) => (img.onload = resolve));
 
 	const canvas = document.createElement('canvas');
