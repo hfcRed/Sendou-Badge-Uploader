@@ -5,11 +5,11 @@
  */
 export function splitString(s, sep) {
 	const i = s.indexOf(sep);
-	return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + sep.length)];
+	return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i + sep.length)];
 }
 
 /**
- * @param {string} s 
+ * @param {string} s
  * @returns {[string, string]}
  */
 export function readLine(s) {
@@ -18,12 +18,12 @@ export function readLine(s) {
 	while (i < s.length) {
 		const c = s.charAt(i);
 		i++;
-		if (c === "\n") {
+		if (c === '\n') {
 			end = i - 1;
 			break;
-		} else if (c === "\r") {
+		} else if (c === '\r') {
 			end = i - 1;
-			if (s.charAt(i) === "\n") {
+			if (s.charAt(i) === '\n') {
 				i++;
 			}
 			break;

@@ -1,5 +1,5 @@
-import { GIFEncoder, quantize, applyPalette } from "./gifenc";
-import { rgbToInt } from "../color";
+import { GIFEncoder, quantize, applyPalette } from './gifenc';
+import { rgbToInt } from '../color';
 
 let gifRecorder = new GIFEncoder();
 
@@ -22,11 +22,20 @@ function addFrame(frame) {
  * @param {import("./gifenc").GIFPalette|null} globalPalette
  * @param {number} transparentIndex
  */
-function generateAndReset(width, height, scale, delay, background, globalPalette, transparentIndex) {
+function generateAndReset(
+	width,
+	height,
+	scale,
+	delay,
+	background,
+	globalPalette,
+	transparentIndex
+) {
 	let pixelCount = width * height;
 	let recycledIndices = null;
 	let scaledIndices = new Uint8Array(pixelCount * scale * scale);
-	let paletteIntToIndex = globalPalette == null ? null : new Map(globalPalette.map((rgb, i) => [rgbToInt(rgb), i]));
+	let paletteIntToIndex =
+		globalPalette == null ? null : new Map(globalPalette.map((rgb, i) => [rgbToInt(rgb), i]));
 
 	for (let i = 0; i < frames.length; i++) {
 		let frame = frames[i];
@@ -49,7 +58,7 @@ function generateAndReset(width, height, scale, delay, background, globalPalette
 		if (globalPalette == null) {
 			// Have no palette, need to quantize and paletize each frame.
 			palette = quantize(frame, 256, {
-				format: "rgba4444",
+				format: 'rgba4444'
 			});
 
 			// Check for transparent pixels.
@@ -62,7 +71,7 @@ function generateAndReset(width, height, scale, delay, background, globalPalette
 				}
 			}
 
-			indices = applyPalette(frame, palette, "rgba4444");
+			indices = applyPalette(frame, palette, 'rgba4444');
 		} else {
 			// Only need to write the global palette once.
 			if (i === 0) {
@@ -130,7 +139,7 @@ function generateAndReset(width, height, scale, delay, background, globalPalette
 			palette: palette,
 			delay: delay,
 			transparent: isTransparent,
-			transparentIndex: transparentIndex,
+			transparentIndex: transparentIndex
 		});
 	}
 
@@ -139,7 +148,7 @@ function generateAndReset(width, height, scale, delay, background, globalPalette
 
 	let buffer = gifRecorder.bytesView();
 
-	postMessage({ type: "gif", data: buffer }, [buffer.buffer]);
+	postMessage({ type: 'gif', data: buffer }, [buffer.buffer]);
 
 	// Cleanup.
 	gifRecorder.reset();
@@ -147,17 +156,25 @@ function generateAndReset(width, height, scale, delay, background, globalPalette
 	frames.length = 0;
 }
 
-addEventListener("message", (event) => {
+addEventListener('message', (event) => {
 	let data = event.data;
 
 	let eventType = data.type;
 
-	if (eventType === "generate") {
-		generateAndReset(data.width, data.height, data.scale, data.delay, data.background, data.palette, data.transparentIndex);
-	} else if (eventType === "frame") {
+	if (eventType === 'generate') {
+		generateAndReset(
+			data.width,
+			data.height,
+			data.scale,
+			data.delay,
+			data.background,
+			data.palette,
+			data.transparentIndex
+		);
+	} else if (eventType === 'frame') {
 		addFrame(data.data);
 	}
 });
 
 // Tell main script we're ready.
-postMessage({ type: "load" });
+postMessage({ type: 'load' });

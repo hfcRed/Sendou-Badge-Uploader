@@ -10,10 +10,13 @@ let _lzwLoggingEnabled = false;
 const _self = {},
 	_lzwLog = function (message) {
 		try {
-			console.log('lzwCompress: ' +
-				(new Date()).toISOString() + ' : ' + (typeof (message) === 'object' ? JSON.stringify(message) : message));
-		} catch (e) {
-		}
+			console.log(
+				'lzwCompress: ' +
+					new Date().toISOString() +
+					' : ' +
+					(typeof message === 'object' ? JSON.stringify(message) : message)
+			);
+		} catch (e) {}
 	};
 
 // KeyOptimize
@@ -21,10 +24,10 @@ const _self = {},
 (function (self) {
 	let _keys = [];
 	const comparer = function (key) {
-		return function (e) {
-			return e === key;
-		};
-	},
+			return function (e) {
+				return e === key;
+			};
+		},
 		inArray = function (array, comparer) {
 			for (let i = 0; i < array.length; i++) {
 				if (comparer(array[i])) {
@@ -90,7 +93,7 @@ const _self = {},
 		},
 		decompress = function (minifiedJson) {
 			const obj = minifiedJson;
-			if (typeof (obj) !== 'object') {
+			if (typeof obj !== 'object') {
 				return minifiedJson;
 			}
 			if (!obj.hasOwnProperty('__k')) {
@@ -104,45 +107,45 @@ const _self = {},
 		pack: compress,
 		unpack: decompress
 	};
-}(_self));
+})(_self);
 
 // LZWCompress
 // http://stackoverflow.com/a/2252533/218882
 // http://rosettacode.org/wiki/LZW_compression#JavaScript
 (function (self) {
 	const compress = function (uncompressed) {
-		if (typeof (uncompressed) !== 'string') {
-			return uncompressed;
-		}
-		let i;
-		const dictionary = Object.create(null);
-		let c,
-			wc,
-			w = '';
-		const result = [];
-		let dictSize = 256;
-		for (i = 0; i < 256; i += 1) {
-			dictionary[String.fromCharCode(i)] = i;
-		}
-		for (i = 0; i < uncompressed.length; i += 1) {
-			c = uncompressed.charAt(i);
-			wc = w + c;
-			if (dictionary[wc]) {
-				w = wc;
-			} else {
-				if (dictionary[w] === undefined) {
-					return uncompressed;
-				}
-				result.push(dictionary[w]);
-				dictionary[wc] = dictSize++;
-				w = String(c);
+			if (typeof uncompressed !== 'string') {
+				return uncompressed;
 			}
-		}
-		if (w !== '') {
-			result.push(dictionary[w]);
-		}
-		return result;
-	},
+			let i;
+			const dictionary = Object.create(null);
+			let c,
+				wc,
+				w = '';
+			const result = [];
+			let dictSize = 256;
+			for (i = 0; i < 256; i += 1) {
+				dictionary[String.fromCharCode(i)] = i;
+			}
+			for (i = 0; i < uncompressed.length; i += 1) {
+				c = uncompressed.charAt(i);
+				wc = w + c;
+				if (dictionary[wc]) {
+					w = wc;
+				} else {
+					if (dictionary[w] === undefined) {
+						return uncompressed;
+					}
+					result.push(dictionary[w]);
+					dictionary[wc] = dictSize++;
+					w = String(c);
+				}
+			}
+			if (w !== '') {
+				result.push(dictionary[w]);
+			}
+			return result;
+		},
 		decompress = function (compressed) {
 			if (!Array.isArray(compressed)) {
 				return compressed;
@@ -181,10 +184,10 @@ const _self = {},
 		pack: compress,
 		unpack: decompress
 	};
-}(_self));
+})(_self);
 
 /**
- * @param {string} obj 
+ * @param {string} obj
  * @returns {number[]}
  */
 export function compress(obj) {
@@ -203,7 +206,7 @@ export function compress(obj) {
 }
 
 /**
- * @param {number[]} compressedObj 
+ * @param {number[]} compressedObj
  * @returns {string}
  */
 export function decompress(compressedObj) {
@@ -211,7 +214,8 @@ export function decompress(compressedObj) {
 	if (!compressedObj || compressedObj === true || compressedObj instanceof Date) {
 		return compressedObj;
 	}
-	let probableJSON, result = _self.LZWCompress.unpack(compressedObj);
+	let probableJSON,
+		result = _self.LZWCompress.unpack(compressedObj);
 	try {
 		probableJSON = JSON.parse(result);
 	} catch (e) {
@@ -226,8 +230,8 @@ export function decompress(compressedObj) {
 }
 
 /**
- * @param {boolean} enable 
+ * @param {boolean} enable
  */
 export function enableLogging(enable) {
 	_lzwLoggingEnabled = enable;
-};
+}

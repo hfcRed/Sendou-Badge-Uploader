@@ -1,4 +1,4 @@
-import { PICO_COLORS } from "./pico";
+import { PICO_COLORS } from './pico';
 
 export class PicoCADModel {
 	/**
@@ -10,7 +10,7 @@ export class PicoCADModel {
 	 * @param {number} [options.zoomLevel] The preferred initial zoom level.
 	 * @param {number[]} [options.texture] The 128x120 texture as an array of PICO-8 color indices.
 	 */
-	constructor(objects, options={}) {
+	constructor(objects, options = {}) {
 		this.objects = objects;
 		/** The model name. */
 		this.name = options.name;
@@ -27,7 +27,7 @@ export class PicoCADModel {
 	backgroundColor() {
 		return PICO_COLORS[this.backgroundIndex];
 	}
-	
+
 	alphaColor() {
 		return PICO_COLORS[this.alphaIndex];
 	}
@@ -56,11 +56,11 @@ export class PicoCADModel {
 		for (let y = 0; y < 120; y++) {
 			for (let x = 0; x < 128; x++) {
 				const index = tex[i];
-				
+
 				if (index !== alphaIndex) {
 					const rgb = colors[index];
 
-					data[ti    ] = rgb[0];
+					data[ti] = rgb[0];
 					data[ti + 1] = rgb[1];
 					data[ti + 2] = rgb[2];
 					data[ti + 3] = 255;
@@ -77,11 +77,11 @@ export class PicoCADModel {
 
 export class PicoCADModelObject {
 	/**
-	 * @param {string} name 
-	 * @param {number[]} position 
-	 * @param {number[]} rotation 
+	 * @param {string} name
+	 * @param {number[]} position
+	 * @param {number[]} rotation
 	 * @param {number[][]} vertices Array of triplets of 3D vertices.
-	 * @param {PicoCADModelFace[]} faces 
+	 * @param {PicoCADModelFace[]} faces
 	 */
 	constructor(name, position, rotation, vertices, faces) {
 		this.name = name;
@@ -107,7 +107,7 @@ export class PicoCADModelFace {
 	 * @param {boolean} [options.doubleSided] Defaults to false.
 	 * @param {boolean} [options.renderFirst] Defaults to false.
 	 */
-	constructor(indices, colorIndex, uvs, options={}) {
+	constructor(indices, colorIndex, uvs, options = {}) {
 		/** Indices that point to a vertex in the object vertices. 0 base index. */
 		this.indices = indices;
 		/** PICO-8 color index. */

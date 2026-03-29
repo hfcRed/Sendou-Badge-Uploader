@@ -4,7 +4,7 @@
 export class Pass {
 	/**
 	 * @param {WebGLRenderingContext} gl
-	 * @param {{cull?: boolean, shading?: boolean, texture?: boolean, clearDepth?: boolean}} [options] 
+	 * @param {{cull?: boolean, shading?: boolean, texture?: boolean, clearDepth?: boolean}} [options]
 	 */
 	constructor(gl, options = {}) {
 		this.gl = gl;
@@ -83,7 +83,7 @@ export class Pass {
 
 export class WirePass {
 	/**
-	 * @param {WebGLRenderingContext} gl 
+	 * @param {WebGLRenderingContext} gl
 	 */
 	constructor(gl) {
 		this.gl = gl;

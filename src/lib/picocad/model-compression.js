@@ -1,14 +1,13 @@
-import { PicoCADModel, PicoCADModelFace, PicoCADModelObject } from "./model";
-import * as LZW from "./lzw";
-
+import { PicoCADModel, PicoCADModelFace, PicoCADModelObject } from './model';
+import * as LZW from './lzw';
 
 /**
- * @param {PicoCADModel} model 
+ * @param {PicoCADModel} model
  * @returns {string}
  */
 export function urlCompressModel(model) {
 	const bytes = modelToBytes(model);
-	console.log("binary: " + bytes.length + " bytes");
+	console.log('binary: ' + bytes.length + ' bytes');
 
 	const lzw = LZW.compress(toByteString(bytes));
 
@@ -17,7 +16,7 @@ export function urlCompressModel(model) {
 	let s = btoa(toByteString(lzwBitstream));
 
 	// trim "=" from end
-	let lastEq = s.indexOf("=", s.length - 4);
+	let lastEq = s.indexOf('=', s.length - 4);
 	if (lastEq >= 0) s = s.slice(0, lastEq);
 
 	return s;
@@ -38,11 +37,11 @@ export function urlDecompressModel(s) {
 }
 
 /**
- * @param {number[]} bytes 
+ * @param {number[]} bytes
  * @returns {string}
  */
 export function toByteString(bytes) {
-	let s = "";
+	let s = '';
 	for (const byte of bytes) {
 		s += String.fromCharCode(byte);
 	}
@@ -50,7 +49,7 @@ export function toByteString(bytes) {
 }
 
 /**
- * @param {string} s 
+ * @param {string} s
  * @returns {number[]}
  */
 export function fromByteString(s) {
@@ -61,12 +60,11 @@ export function fromByteString(s) {
 	return bytes;
 }
 
-
 // Encoding/Decoding
 
 const ENCODING_VERSION_1_0 = 1;
 
-const ALPHABET = "\0abcdefghijklmnopqrstuvwxyz0123456789_ ";
+const ALPHABET = '\0abcdefghijklmnopqrstuvwxyz0123456789_ ';
 
 const TEXTURE_ENCODING_RLE = 0;
 const TEXTURE_ENCODING_PACKED = 1;
@@ -75,7 +73,7 @@ const uint16 = new Uint16Array(1);
 const uint8 = new Uint8Array(uint16.buffer);
 
 /**
- * @param {PicoCADModel} model 
+ * @param {PicoCADModel} model
  */
 function modelToBytes(model) {
 	// Utils
@@ -103,7 +101,7 @@ function modelToBytes(model) {
 	}
 
 	/**
-	 * @param {number} x 
+	 * @param {number} x
 	 */
 	function putFloat(x) {
 		const r = Math.round(x * 64) / 64;
@@ -115,7 +113,7 @@ function modelToBytes(model) {
 			if (n >= 32768) throw Error(`can't encode float "${x}"`);
 
 			bytes.push((n & 65280) >> 8);
-			bytes.push((n & 255));
+			bytes.push(n & 255);
 		}
 	}
 
@@ -144,7 +142,7 @@ function modelToBytes(model) {
 	}
 
 	/**
-	 * @param {number} b 
+	 * @param {number} b
 	 */
 	function putPackedBit(b) {
 		packByte += b << packIndex;
@@ -157,9 +155,8 @@ function modelToBytes(model) {
 		}
 	}
 
-
 	// Start encoding.
-	const bytes = /** @type {number[]} */([]);
+	const bytes = /** @type {number[]} */ ([]);
 
 	// Put encoding version (future proofing).
 	bytes.push(ENCODING_VERSION_1_0);
@@ -174,7 +171,7 @@ function modelToBytes(model) {
 	packEnd();
 
 	// Put object data.
-	if (model.objects.length >= 256) throw Error("Too many objects");
+	if (model.objects.length >= 256) throw Error('Too many objects');
 	bytes.push(model.objects.length);
 
 	for (const object of model.objects) {
@@ -183,7 +180,7 @@ function modelToBytes(model) {
 		putFloats(object.position);
 
 		// Put vertices
-		if (object.vertices.length >= 256) throw Error("Too many vertices on object");
+		if (object.vertices.length >= 256) throw Error('Too many vertices on object');
 		bytes.push(object.vertices.length);
 
 		for (const vertex of object.vertices) {
@@ -193,7 +190,7 @@ function modelToBytes(model) {
 		// Put faces
 		const bpi = bitsToStore(object.vertices.length - 1);
 
-		if (object.faces.length >= 256) throw Error("Too many faces on object");
+		if (object.faces.length >= 256) throw Error('Too many faces on object');
 		bytes.push(object.faces.length);
 
 		for (const face of object.faces) {
@@ -239,7 +236,7 @@ function modelToBytes(model) {
 	const rleBytes = [];
 
 	// generate 1byte per pixel w/ run length encoding
-	for (let i = 0; i <= final_i;) {
+	for (let i = 0; i <= final_i; ) {
 		const index = model.texture[i];
 		let repeats = 0;
 
@@ -278,20 +275,19 @@ function modelToBytes(model) {
 	return bytes;
 }
 
-
 /**
- * @param {number[]} bytes 
+ * @param {number[]} bytes
  * @returns {PicoCADModel}
  */
 function bytesToModel(bytes) {
 	// Utils
 	function getPackedString() {
-		let s = "";
+		let s = '';
 
 		while (true) {
 			const n = getPacked(6);
 			if (n === 0) break;
-			if (n >= ALPHABET.length) throw Error("invalid encoded string");
+			if (n >= ALPHABET.length) throw Error('invalid encoded string');
 			s += ALPHABET.charAt(n);
 		}
 
@@ -305,7 +301,7 @@ function bytesToModel(bytes) {
 		if (byte_i < bytes.length) {
 			return bytes[byte_i++];
 		} else {
-			throw Error("unexpected of input");
+			throw Error('unexpected of input');
 		}
 	}
 
@@ -374,7 +370,7 @@ function bytesToModel(bytes) {
 				packIndex = 0;
 				byte_i++;
 				if (byte_i >= bytes.length) {
-					throw Error("Unexpected end of input");
+					throw Error('Unexpected end of input');
 				}
 				byte = bytes[byte_i];
 			}
@@ -383,13 +379,13 @@ function bytesToModel(bytes) {
 		return packValue;
 	}
 
-
 	// Start decoding.
 	let byte_i = 0;
 
 	// Get encoding version (unused at the moment).
 	const encodingVersion = getByte();
-	if (encodingVersion !== ENCODING_VERSION_1_0) throw Error(`invalid encoding version ${encodingVersion}`);
+	if (encodingVersion !== ENCODING_VERSION_1_0)
+		throw Error(`invalid encoding version ${encodingVersion}`);
 
 	// Get model meta.
 	const modelName = getPackedString();
@@ -402,7 +398,7 @@ function bytesToModel(bytes) {
 
 	// Get object data.
 	const objectCount = getByte();
-	const objects = /** @type {PicoCADModelObject[]} */(Array(objectCount));
+	const objects = /** @type {PicoCADModelObject[]} */ (Array(objectCount));
 
 	for (let object_i = 0; object_i < objectCount; object_i++) {
 		const objectName = getPackedString();
@@ -411,7 +407,7 @@ function bytesToModel(bytes) {
 
 		// Get vertices
 		const vertexCount = getByte();
-		const vertices = /** @type {number[][]} */(Array(vertexCount));
+		const vertices = /** @type {number[][]} */ (Array(vertexCount));
 
 		for (let vertex_i = 0; vertex_i < vertexCount; vertex_i++) {
 			vertices[vertex_i] = getFloats(3);
@@ -422,7 +418,7 @@ function bytesToModel(bytes) {
 
 		const faceCount = getByte();
 
-		const faces = /** @type {PicoCADModelFace[]} */(Array(faceCount));
+		const faces = /** @type {PicoCADModelFace[]} */ (Array(faceCount));
 
 		for (let face_i = 0; face_i < faceCount; face_i++) {
 			// Get face meta.
@@ -445,17 +441,14 @@ function bytesToModel(bytes) {
 			const index_count = indices.length;
 
 			// Get UVs
-			let uvs = /** @type {number[][]} */(Array(index_count));
+			let uvs = /** @type {number[][]} */ (Array(index_count));
 
 			if (texture) {
 				for (let uv_i = 0; uv_i < index_count; uv_i++) {
 					const p0 = getPacked(7);
 					const p1 = getPacked(7);
 
-					uvs[uv_i] = [
-						(p0 - 32) / 4,
-						(p1 - 32) / 4,
-					];
+					uvs[uv_i] = [(p0 - 32) / 4, (p1 - 32) / 4];
 				}
 			} else {
 				for (let uv_i = 0; uv_i < index_count; uv_i++) {
@@ -463,29 +456,18 @@ function bytesToModel(bytes) {
 				}
 			}
 
-			faces[face_i] = new PicoCADModelFace(
-				indices,
-				colorIndex,
-				uvs,
-				{
-					texture: texture,
-					shading: shading,
-					doubleSided: doubleSided,
-					renderFirst: renderFirst,
-				}
-			);
+			faces[face_i] = new PicoCADModelFace(indices, colorIndex, uvs, {
+				texture: texture,
+				shading: shading,
+				doubleSided: doubleSided,
+				renderFirst: renderFirst
+			});
 		}
 
 		packEnd();
 
 		// Got object!
-		objects[object_i] = new PicoCADModelObject(
-			objectName,
-			objectPos,
-			[0, 0, 0],
-			vertices,
-			faces,
-		);
+		objects[object_i] = new PicoCADModelObject(objectName, objectPos, [0, 0, 0], vertices, faces);
 	}
 
 	// Get texture data.
@@ -495,7 +477,7 @@ function bytesToModel(bytes) {
 	let textureIndices = [];
 
 	if (textureEncoding === TEXTURE_ENCODING_RLE) {
-		for (let i = 0; i <= 15360;) {
+		for (let i = 0; i <= 15360; ) {
 			const byte = getOptionalByte();
 			if (byte < 0) break;
 
@@ -511,10 +493,7 @@ function bytesToModel(bytes) {
 			const byte = getOptionalByte();
 			if (byte < 0) break;
 
-			textureIndices.push(
-				(byte & 0b11110000) >> 4,
-				byte & 0b1111,
-			);
+			textureIndices.push((byte & 0b11110000) >> 4, byte & 0b1111);
 		}
 	} else {
 		throw Error(`Invalid texture encoding code: ${textureEncoding}`);
@@ -535,12 +514,12 @@ function bytesToModel(bytes) {
 		alphaIndex: alphaIndex,
 		backgroundIndex: backgroundIndex,
 		zoomLevel: zoomLevel,
-		texture: textureIndices,
+		texture: textureIndices
 	});
 }
 
 /**
- * @param {number[]} xs 
+ * @param {number[]} xs
  */
 export function lzwNumbersToBitStream(xs) {
 	const bytes = [];
@@ -580,7 +559,7 @@ export function lzwNumbersToBitStream(xs) {
 }
 
 /**
- * @param {number[]} bytes 
+ * @param {number[]} bytes
  */
 export function bitStreamToLZWNumbers(bytes) {
 	const xs = [];
@@ -617,7 +596,7 @@ export function bitStreamToLZWNumbers(bytes) {
 
 /**
  * Get the min number of bits required to store `x`.
- * @param {number} x 
+ * @param {number} x
  */
 function bitsToStore(x) {
 	return Math.floor(Math.log2(x) + 1);

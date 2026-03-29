@@ -1,13 +1,13 @@
 /**
- * @param {string} s 
+ * @param {string} s
  * @returns {LuaPicoCADModel}
  */
 export function parsePicoCADData(s) {
-	return /** @type {any} */(parseLua(s));
+	return /** @type {any} */ (parseLua(s));
 }
 
 /**
- * @param {string} s 
+ * @param {string} s
  * @returns {LuaTable}
  */
 function parseLua(s) {
@@ -17,14 +17,14 @@ function parseLua(s) {
 
 	function readValue() {
 		const c = s.charAt(i);
-		if (c === "{") {
+		if (c === '{') {
 			return readObject();
 		} else if (c === "'") {
 			return readString();
-		} else if (c === "-" || c === "." || (c >= "0" && c <= "9")) {
+		} else if (c === '-' || c === '.' || (c >= '0' && c <= '9')) {
 			return readNumber();
 		} else {
-			throw Error("Unkown value (" + i + "): " + "\"" + c + "\" = " + c.charCodeAt(0));
+			throw Error('Unkown value (' + i + '): ' + '"' + c + '" = ' + c.charCodeAt(0));
 		}
 	}
 
@@ -33,7 +33,7 @@ function parseLua(s) {
 
 		const obj = {
 			array: [],
-			dict: Object.create(null),
+			dict: Object.create(null)
 		};
 
 		skipWhitespace();
@@ -41,21 +41,21 @@ function parseLua(s) {
 		while (true) {
 			const c = s.charAt(i);
 
-			if (c === "}") {
+			if (c === '}') {
 				i++;
 				break;
 			}
 
 			let key;
 
-			if (c >= "a" && c <= "z") {
+			if (c >= 'a' && c <= 'z') {
 				// key-value pair
 				let start = i;
 				i++;
 
 				while (true) {
 					const c = s.charAt(i);
-					if (c === "=") {
+					if (c === '=') {
 						break;
 					} else {
 						i++;
@@ -78,7 +78,7 @@ function parseLua(s) {
 
 			const cc = s.charAt(i);
 
-			if (cc === ",") {
+			if (cc === ',') {
 				i++;
 				skipWhitespace();
 			}
@@ -92,11 +92,11 @@ function parseLua(s) {
 		const start = i;
 		const j = s.indexOf("'", i + 1);
 		if (j < 0) {
-			throw Error("No end!!!");
+			throw Error('No end!!!');
 		}
 		i = j + 1;
 		if (i === start) {
-			throw Error("!!!!");
+			throw Error('!!!!');
 		}
 		return s.slice(start + 1, j);
 	}
@@ -107,7 +107,7 @@ function parseLua(s) {
 		while (true) {
 			const c = s.charAt(i);
 
-			if (c === "-" || c === "." || (c >= "0" && c <= "9")) {
+			if (c === '-' || c === '.' || (c >= '0' && c <= '9')) {
 				i++;
 			} else {
 				break;
@@ -115,7 +115,7 @@ function parseLua(s) {
 		}
 
 		if (i === start) {
-			throw Error("!!!!");
+			throw Error('!!!!');
 		}
 
 		return Number(s.slice(start, i));
@@ -125,7 +125,7 @@ function parseLua(s) {
 		while (true) {
 			const c = s.charAt(i);
 
-			if (c === " " || c === "\n" || c === "\r" || c === "\t") {
+			if (c === ' ' || c === '\n' || c === '\r' || c === '\t') {
 				i++;
 			} else {
 				break;

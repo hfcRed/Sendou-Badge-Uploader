@@ -17,7 +17,9 @@ function leftShift(x, n) {
  */
 export function rgbToInt(rgb) {
 	// Need to do alpha left shift manually to prevent overflow
-	return (rgb.length < 4 ? 0xff000000 : leftShift(rgb[3], 24)) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0];
+	return (
+		(rgb.length < 4 ? 0xff000000 : leftShift(rgb[3], 24)) + (rgb[2] << 16) + (rgb[1] << 8) + rgb[0]
+	);
 }
 
 /**
@@ -25,7 +27,7 @@ export function rgbToInt(rgb) {
  * @returns {number[]}
  */
 export function rgb255To01(rgb) {
-	return rgb.map(a => a / 255);
+	return rgb.map((a) => a / 255);
 }
 
 /**
@@ -33,7 +35,7 @@ export function rgb255To01(rgb) {
  * @returns {number[]}
  */
 export function rgb01to255(rgb) {
-	return rgb.map(a => Math.floor(a * 255.999));
+	return rgb.map((a) => Math.floor(a * 255.999));
 }
 
 /**

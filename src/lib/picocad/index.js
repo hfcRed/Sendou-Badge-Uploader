@@ -1,13 +1,13 @@
-import { mat4 } from "gl-matrix";
-import { vec3 } from "gl-matrix";
-import { prepareModelForRendering } from "./model-gl-loader";
-import { PICO_COLORS } from "./pico";
-import { ShaderProgram } from "./shader-program";
-import { createLightMap } from "./lighting";
-import { PicoCADModel } from "./model";
-import { parsePicoCADModel } from "./model-parser";
-import { luma, rgb01to255, rgbToInt } from "./color";
-import { lazyLoadedFontImage } from "./text.js";
+import { mat4 } from 'gl-matrix';
+import { vec3 } from 'gl-matrix';
+import { prepareModelForRendering } from './model-gl-loader';
+import { PICO_COLORS } from './pico';
+import { ShaderProgram } from './shader-program';
+import { createLightMap } from './lighting';
+import { PicoCADModel } from './model';
+import { parsePicoCADModel } from './model-parser';
+import { luma, rgb01to255, rgbToInt } from './color';
+import { lazyLoadedFontImage } from './text.js';
 
 export class PicoCADViewer {
 	/**
@@ -27,14 +27,14 @@ export class PicoCADViewer {
 	constructor(options = {}) {
 		this.canvas = options.canvas;
 		if (this.canvas == null) {
-			this.canvas = document.createElement("canvas");
+			this.canvas = document.createElement('canvas');
 		}
 
 		/** The webGL rendering context. */
-		const gl = this.gl = this.canvas.getContext("webgl", {
+		const gl = (this.gl = this.canvas.getContext('webgl', {
 			antialias: false,
-			preserveDrawingBuffer: options.preserveDrawingBuffer ?? false,
-		});
+			preserveDrawingBuffer: options.preserveDrawingBuffer ?? false
+		}));
 
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -43,14 +43,14 @@ export class PicoCADViewer {
 		this.cameraPosition = {
 			x: 0,
 			y: 0,
-			z: 0,
+			z: 0
 		};
 
 		/** Camera rotation as Euler angles (radians). */
 		this.cameraRotation = {
 			x: 0,
 			y: 0,
-			z: 0,
+			z: 0
 		};
 
 		/** The camera field-of-view in degrees. */
@@ -64,7 +64,7 @@ export class PicoCADViewer {
 		/** If the model should be drawn with lighting. */
 		this.shading = options.shading ?? true;
 		/** The style draw the model. */
-		this.renderMode = options.renderMode ?? "texture";
+		this.renderMode = options.renderMode ?? 'texture';
 		/**
 		 * A custom background color. As [R, G, B] or [R, G, B, A] (each component [0, 1]).
 		 * @type {number[]}
@@ -88,7 +88,7 @@ export class PicoCADViewer {
 			colorFrom: [1, 1, 1],
 			colorTo: [1, 1, 1],
 			gradient: 0,
-			gradientDirection: 0,
+			gradientDirection: 0
 		};
 
 		/**
@@ -108,7 +108,7 @@ export class PicoCADViewer {
 			colorFrom: [1, 1, 1],
 			colorTo: [1, 1, 1],
 			gradient: 0,
-			gradientDirection: 0,
+			gradientDirection: 0
 		};
 
 		/**
@@ -144,12 +144,12 @@ export class PicoCADViewer {
 			brightness: 1.0,
 			contrast: 1.0,
 			saturation: 1.0,
-			hue: 1.0,
+			hue: 1.0
 		};
 		/**
 		 * Posterize options.
 		 * @type {{
-		 *   enabled: boolean, 
+		 *   enabled: boolean,
 		 *   levels: number,
 		 *   channelLevels: number[],
 		 *   gamma: number,
@@ -169,7 +169,7 @@ export class PicoCADViewer {
 		 */
 		this.noise = {
 			enabled: false,
-			amount: 0.05,
+			amount: 0.05
 		};
 		/**
 		 * Bloom options.
@@ -179,7 +179,7 @@ export class PicoCADViewer {
 			enabled: false,
 			threshold: 0.7,
 			intensity: 0.5,
-			blur: 1.0,
+			blur: 1.0
 		};
 		/**
 		 * Dither options.
@@ -189,7 +189,7 @@ export class PicoCADViewer {
 			enabled: false,
 			amount: 0.5,
 			blend: 1.0,
-			channelAmount: [1, 1, 1],
+			channelAmount: [1, 1, 1]
 		};
 		/**
 		 * CRT options.
@@ -198,7 +198,7 @@ export class PicoCADViewer {
 		this.crt = {
 			enabled: false,
 			curvature: 0.5,
-			scanlineIntensity: 0.3,
+			scanlineIntensity: 0.3
 		};
 		/**
 		 * Pixelate options.
@@ -207,8 +207,8 @@ export class PicoCADViewer {
 		this.pixelate = {
 			enabled: false,
 			pixelSize: 1,
-			shape: "square",
-			blend: 1.0,
+			shape: 'square',
+			blend: 1.0
 		};
 		/**
 		 * Lens distortion options.
@@ -217,7 +217,7 @@ export class PicoCADViewer {
 		this.lensDistortion = {
 			enabled: false,
 			strength: 1.0,
-			zoom: 2.0,
+			zoom: 2.0
 		};
 
 		/**
@@ -270,14 +270,22 @@ export class PicoCADViewer {
 				enabled: false,
 				strength: 0.0,
 				smoothness: 10.0,
-				color: [1.0, 1.0, 1.0],
-			},
+				color: [1.0, 1.0, 1.0]
+			}
 		};
 
 		/** @private @type {Pass[]} */
 		this._passes = [];
 		/** @private @type {WebGLTexture} */
-		this._colorIndexTex = this._createTexture(null, this.gl.LUMINANCE, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]), 16, 1);
+		this._colorIndexTex = this._createTexture(
+			null,
+			this.gl.LUMINANCE,
+			this.gl.LUMINANCE,
+			this.gl.UNSIGNED_BYTE,
+			new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+			16,
+			1
+		);
 		/** @private @type {WebGLTexture} */
 		this._indexTex = null;
 		/** @private @type {WebGLTexture} */
@@ -326,14 +334,11 @@ export class PicoCADViewer {
 		/** @private */
 		this._screenQuads = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-			-1, -1,
-			+1, -1,
-			-1, +1,
-			-1, +1,
-			+1, -1,
-			+1, +1,
-		]), gl.STATIC_DRAW);
+		gl.bufferData(
+			gl.ARRAY_BUFFER,
+			new Float32Array([-1, -1, +1, -1, -1, +1, -1, +1, +1, -1, +1, +1]),
+			gl.STATIC_DRAW
+		);
 
 		// Set resolution. Internally this will also setup Safari framebuffers.
 		const res = options.resolution;
@@ -374,15 +379,20 @@ export class PicoCADViewer {
 
 	/**
 	 * Set the size and scale of the viewport.
-	 * @param {number} width 
-	 * @param {number} height 
+	 * @param {number} width
+	 * @param {number} height
 	 * @param {number} [scale] The level of scaling, e.g. '3' means three times as big as the native resolution.
 	 */
 	setResolution(width, height, scale = 1) {
-		if (this._resolution != null && this._resolution[0] === width && this._resolution[1] === height && this._resolution[2] === scale) return;
+		if (
+			this._resolution != null &&
+			this._resolution[0] === width &&
+			this._resolution[1] === height &&
+			this._resolution[2] === scale
+		)
+			return;
 
-		/** @private */;
-		this._resolution = [width, height, scale, 0, 0];
+		/** @private */ this._resolution = [width, height, scale, 0, 0];
 
 		const widthScreen = width * scale;
 		const heightScreen = height * scale;
@@ -395,8 +405,24 @@ export class PicoCADViewer {
 
 		// Update framebuffer resolution.
 		/** @private */
-		this._frameBufferTex = this._createTexture(this._frameBufferTex, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
-		this._frameBufferTex2 = this._createTexture(this._frameBufferTex2, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
+		this._frameBufferTex = this._createTexture(
+			this._frameBufferTex,
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			null,
+			width,
+			height
+		);
+		this._frameBufferTex2 = this._createTexture(
+			this._frameBufferTex2,
+			gl.RGBA,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			null,
+			width,
+			height
+		);
 
 		gl.bindRenderbuffer(gl.RENDERBUFFER, this._depthBuffer);
 		gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
@@ -407,9 +433,14 @@ export class PicoCADViewer {
 			gl.COLOR_ATTACHMENT0,
 			gl.TEXTURE_2D,
 			this._frameBufferTex,
-			0,
+			0
 		);
-		gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this._depthBuffer);
+		gl.framebufferRenderbuffer(
+			gl.FRAMEBUFFER,
+			gl.DEPTH_ATTACHMENT,
+			gl.RENDERBUFFER,
+			this._depthBuffer
+		);
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, this._frameBuffer2);
 		gl.framebufferTexture2D(
@@ -417,7 +448,7 @@ export class PicoCADViewer {
 			gl.COLOR_ATTACHMENT0,
 			gl.TEXTURE_2D,
 			this._frameBufferTex2,
-			0,
+			0
 		);
 
 		canvas.style.width = `${widthScreen}px`;
@@ -428,7 +459,7 @@ export class PicoCADViewer {
 		return {
 			width: this._resolution[0],
 			height: this._resolution[1],
-			scale: this._resolution[2],
+			scale: this._resolution[2]
 		};
 	}
 
@@ -453,25 +484,31 @@ export class PicoCADViewer {
 		if (this._lightMapTex != null) this.gl.deleteTexture(this._lightMapTex);
 
 		/** @private */
-		this._lightMapTex = this._createTexture(null, this.gl.RGB, this.gl.RGB, this.gl.UNSIGNED_BYTE, createLightMap());
+		this._lightMapTex = this._createTexture(
+			null,
+			this.gl.RGB,
+			this.gl.RGB,
+			this.gl.UNSIGNED_BYTE,
+			createLightMap()
+		);
 		/** @type {number[][]} @private */
 		this._lightMapColors = PICO_COLORS.slice();
 	}
 
 	/**
 	 * The RGBA255 colors used in the current render.
-	 * 
+	 *
 	 * The first 16 colors will always be the PICO-8 indices.
 	 * For the default light-map this just returns the PICO-8 colors.
-	 * 
+	 *
 	 * If a custom background is set, that will be included at the end of the array.
-	 * 
+	 *
 	 * Note a custom light-map may contain additional colors not in the returned array, due to shading and dithering.
 	 * @returns {number[][]}
 	 */
 	getPalette() {
 		// Convert existing palette to RGBA
-		let colors = this._lightMapColors.map(color => [color[0], color[1], color[2], 255]);
+		let colors = this._lightMapColors.map((color) => [color[0], color[1], color[2], 255]);
 
 		// Add wireframe color.
 		if (this.drawWireframe) {
@@ -516,7 +553,7 @@ export class PicoCADViewer {
 				Math.floor(this.backgroundColor[0] * 255.999),
 				Math.floor(this.backgroundColor[1] * 255.999),
 				Math.floor(this.backgroundColor[2] * 255.999),
-				this.backgroundColor.length <= 3 ? 255 : Math.floor(this.backgroundColor[3] * 255.999),
+				this.backgroundColor.length <= 3 ? 255 : Math.floor(this.backgroundColor[3] * 255.999)
 			];
 		}
 	}
@@ -558,9 +595,9 @@ export class PicoCADViewer {
 
 	/**
 	 * Override the default light-maps (texture and color).
-	 * 
+	 *
 	 * The passed image-data must be 32 pixels wide, but can be of any height.
-	 * 
+	 *
 	 * Each 2-pixel-column specifies the lightning for one color. Top-to-bottom maps light-to-dark. The two columns are used to provide dithering.
 	 * @param {ImageData} imageData
 	 */
@@ -569,7 +606,13 @@ export class PicoCADViewer {
 
 		this._lightMapColors = this._getLightMapColors(imageData);
 
-		this._lightMapTex = this._createTexture(null, this.gl.RGB, this.gl.RGB, this.gl.UNSIGNED_BYTE, imageData);
+		this._lightMapTex = this._createTexture(
+			null,
+			this.gl.RGB,
+			this.gl.RGB,
+			this.gl.UNSIGNED_BYTE,
+			imageData
+		);
 	}
 
 	/**
@@ -600,7 +643,12 @@ export class PicoCADViewer {
 			// Convert pixels to indices
 			const n = imageData.width * imageData.height;
 			indices = new Uint8Array(n);
-			const colorToIndex = new Map(PICO_COLORS.map(([r, g, b], i) => [0xff000000 | (b << 16) | (g << 8) | r, (this.model.alphaIndex === i ? 255 : i)]));
+			const colorToIndex = new Map(
+				PICO_COLORS.map(([r, g, b], i) => [
+					0xff000000 | (b << 16) | (g << 8) | r,
+					this.model.alphaIndex === i ? 255 : i
+				])
+			);
 			const ints = new Int32Array(src.data.buffer);
 
 			for (let i = 0; i < n; i++) {
@@ -632,15 +680,21 @@ export class PicoCADViewer {
 			}
 		}
 
-
-
 		// Create textures
 		this._freeMainTexture();
-		this._indexTex = this._createTexture(this._indexTex, this.gl.LUMINANCE, this.gl.LUMINANCE, this.gl.UNSIGNED_BYTE, indices, imageData.width, imageData.height);
+		this._indexTex = this._createTexture(
+			this._indexTex,
+			this.gl.LUMINANCE,
+			this.gl.LUMINANCE,
+			this.gl.UNSIGNED_BYTE,
+			indices,
+			imageData.width,
+			imageData.height
+		);
 	}
 
 	/**
-	 * @param {TexImageSource} texture 
+	 * @param {TexImageSource} texture
 	 */
 	setHDTexture(texture) {
 		if (texture == null) {
@@ -649,7 +703,13 @@ export class PicoCADViewer {
 		}
 
 		/** @private */
-		this._hdTex = this._createTexture(this._hdTex, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, texture);
+		this._hdTex = this._createTexture(
+			this._hdTex,
+			this.gl.RGBA,
+			this.gl.RGBA,
+			this.gl.UNSIGNED_BYTE,
+			texture
+		);
 	}
 
 	hasHDTexture() {
@@ -664,7 +724,7 @@ export class PicoCADViewer {
 	}
 
 	/**
-	 * @param {TexImageSource} texture 
+	 * @param {TexImageSource} texture
 	 */
 	setNormalMap(texture) {
 		if (texture == null) {
@@ -673,7 +733,13 @@ export class PicoCADViewer {
 		}
 
 		/** @private */
-		this._normalMapTex = this._createTexture(this._normalMapTex, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, texture);
+		this._normalMapTex = this._createTexture(
+			this._normalMapTex,
+			this.gl.RGBA,
+			this.gl.RGBA,
+			this.gl.UNSIGNED_BYTE,
+			texture
+		);
 	}
 
 	hasNormalMap() {
@@ -708,57 +774,57 @@ export class PicoCADViewer {
 				let bytes = [];
 
 				let charToByte = {
-					"▮": 16,
-					"■": 17,
-					"□": 18,
-					"⁙": 19,
-					"⁘": 20,
-					"‖": 21,
-					"◀": 22,
-					"▶": 23,
-					"「": 24,
-					"」": 25,
-					"¥": 26,
-					"•": 27,
-					"、": 28,
-					"。": 29,
-					"゛": 30,
-					"゜": 31,
-					"○": 127,
-					"█": 128,
-					"▒": 129,
-					"🐱": 130,
-					"⬇️": 131,
-					"░": 132,
-					"✽": 133,
-					"●": 134,
-					"♥": 135,
-					"❤": 135,
-					"☉": 136,
-					"웃": 137,
-					"🧍‍♀️": 137,
-					"🧍‍♂️": 137,
-					"⌂": 138,
-					"🏠": 138,
-					"⬅️": 139,
-					"🙂": 140,
-					"😐": 140,
-					"♪": 141,
-					"🎵": 141,
-					"🅾️": 142,
-					"◆": 143,
-					"…": 144,
-					"➡️": 145,
-					"★": 146,
-					"⧗": 147,
-					"⏳": 147,
-					"⬆️": 148,
-					"ˇ": 149,
-					"∧": 150,
-					"❎": 151,
-					"▤": 152,
-					"▥": 153,
-					"ー": 254,
+					'▮': 16,
+					'■': 17,
+					'□': 18,
+					'⁙': 19,
+					'⁘': 20,
+					'‖': 21,
+					'◀': 22,
+					'▶': 23,
+					'「': 24,
+					'」': 25,
+					'¥': 26,
+					'•': 27,
+					'、': 28,
+					'。': 29,
+					'゛': 30,
+					'゜': 31,
+					'○': 127,
+					'█': 128,
+					'▒': 129,
+					'🐱': 130,
+					'⬇️': 131,
+					'░': 132,
+					'✽': 133,
+					'●': 134,
+					'♥': 135,
+					'❤': 135,
+					'☉': 136,
+					웃: 137,
+					'🧍‍♀️': 137,
+					'🧍‍♂️': 137,
+					'⌂': 138,
+					'🏠': 138,
+					'⬅️': 139,
+					'🙂': 140,
+					'😐': 140,
+					'♪': 141,
+					'🎵': 141,
+					'🅾️': 142,
+					'◆': 143,
+					'…': 144,
+					'➡️': 145,
+					'★': 146,
+					'⧗': 147,
+					'⏳': 147,
+					'⬆️': 148,
+					ˇ: 149,
+					'∧': 150,
+					'❎': 151,
+					'▤': 152,
+					'▥': 153,
+					ー: 254
 				};
 
 				// Iterate code-points and convert to PICO-8 bytes.
@@ -792,7 +858,7 @@ export class PicoCADViewer {
 								byte = 204;
 							}
 
-							if (code <= 0x304A) {
+							if (code <= 0x304a) {
 								// Vowels
 								byte += Math.floor((code - 0x3041) / 2);
 							} else if (code === 0x3063) {
@@ -883,7 +949,7 @@ export class PicoCADViewer {
 					floats[floatIndex++] = y;
 					floats[floatIndex++] = u;
 					floats[floatIndex++] = v;
-				}
+				};
 
 				for (let i = 0; i < bytes.length; i++) {
 					let byte = bytes[i];
@@ -934,10 +1000,10 @@ export class PicoCADViewer {
 	/**
 	 * Creates a nearest neighbor texture with the given formats.
 	 * @private
-	 * @param {WebGLTexture} tex 
-	 * @param {number} internalFormat 
-	 * @param {number} format 
-	 * @param {number} type 
+	 * @param {WebGLTexture} tex
+	 * @param {number} internalFormat
+	 * @param {number} format
+	 * @param {number} type
 	 * @param {TexImageSource|ArrayBufferView} source
 	 * @param {number} [width]
 	 * @param {number} [height]
@@ -958,7 +1024,7 @@ export class PicoCADViewer {
 				internalFormat,
 				format,
 				type,
-				/** @type {TexImageSource} */(source)
+				/** @type {TexImageSource} */ (source)
 			);
 		} else {
 			gl.texImage2D(
@@ -970,7 +1036,7 @@ export class PicoCADViewer {
 				0,
 				format,
 				type,
-				/** @type {ArrayBufferView} */(source)
+				/** @type {ArrayBufferView} */ (source)
 			);
 		}
 
@@ -988,8 +1054,8 @@ export class PicoCADViewer {
 	 * @returns {Promise<PicoCADModel>}
 	 */
 	async load(model) {
-		if (typeof model === "string") {
-			if (model.startsWith("picocad;")) {
+		if (typeof model === 'string') {
+			if (model.startsWith('picocad;')) {
 				this._loadString(model);
 			} else {
 				await this._loadUrl(model);
@@ -1009,7 +1075,7 @@ export class PicoCADViewer {
 
 	/**
 	 * @private
-	 * @param {string | URL} url 
+	 * @param {string | URL} url
 	 */
 	async _loadUrl(url) {
 		const response = await fetch(String(url));
@@ -1023,17 +1089,17 @@ export class PicoCADViewer {
 
 	/**
 	 * @private
-	 * @param {Blob} blob 
+	 * @param {Blob} blob
 	 */
 	_loadBlob(blob) {
 		return new Promise((resolve, reject) => {
-			if (!blob.type.startsWith("text")) {
-				throw Error("picoCAD file must be a text file");
+			if (!blob.type.startsWith('text')) {
+				throw Error('picoCAD file must be a text file');
 			}
 
 			const fr = new FileReader();
 			fr.onload = () => {
-				resolve(this._loadString(/** @type {string} */(fr.result)));
+				resolve(this._loadString(/** @type {string} */ (fr.result)));
 			};
 			fr.onerror = () => {
 				reject(fr.error);
@@ -1078,7 +1144,15 @@ export class PicoCADViewer {
 
 		this._passes = rendering.passes;
 		this._wireframe = rendering.wireframe;
-		this._indexTex = this._createTexture(this._indexTex, gl.LUMINANCE, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array(rendering.textureIndices), 128, 128);
+		this._indexTex = this._createTexture(
+			this._indexTex,
+			gl.LUMINANCE,
+			gl.LUMINANCE,
+			gl.UNSIGNED_BYTE,
+			new Uint8Array(rendering.textureIndices),
+			128,
+			128
+		);
 
 		this.loaded = true;
 		this.model = model;
@@ -1088,8 +1162,8 @@ export class PicoCADViewer {
 	 * Draw the scene once.
 	 */
 	draw() {
-		const doDrawModel = this.renderMode !== "none";
-		const forceColor = this.renderMode === "color";
+		const doDrawModel = this.renderMode !== 'none';
+		const forceColor = this.renderMode === 'color';
 
 		if (!this.loaded || (!doDrawModel && !this.drawWireframe)) {
 			return;
@@ -1112,10 +1186,10 @@ export class PicoCADViewer {
 		const mat = mat4.create();
 		mat4.perspective(
 			mat,
-			this.cameraFOV * Math.PI / 180,
+			(this.cameraFOV * Math.PI) / 180,
 			this._resolution[0] / this._resolution[1],
 			0.1,
-			400,
+			400
 		);
 		mat4.rotateX(mat, mat, this.cameraRotation.x);
 		mat4.rotateY(mat, mat, this.cameraRotation.y);
@@ -1140,32 +1214,14 @@ export class PicoCADViewer {
 					const programInfo = this._programReflection;
 					programInfo.program.use();
 
-					gl.uniformMatrix4fv(
-						programInfo.locations.mvp,
-						false,
-						mat,
-					);
+					gl.uniformMatrix4fv(programInfo.locations.mvp, false, mat);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.vertexBuffer);
-					gl.vertexAttribPointer(
-						programInfo.program.vertexLocation,
-						3,
-						gl.FLOAT,
-						false,
-						0,
-						0,
-					);
+					gl.vertexAttribPointer(programInfo.program.vertexLocation, 3, gl.FLOAT, false, 0, 0);
 					gl.enableVertexAttribArray(programInfo.program.vertexLocation);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.uvBuffer);
-					gl.vertexAttribPointer(
-						programInfo.locations.uv,
-						2,
-						gl.FLOAT,
-						false,
-						0,
-						0,
-					);
+					gl.vertexAttribPointer(programInfo.locations.uv, 2, gl.FLOAT, false, 0, 0);
 					gl.enableVertexAttribArray(programInfo.locations.uv);
 
 					gl.activeTexture(gl.TEXTURE0);
@@ -1184,20 +1240,15 @@ export class PicoCADViewer {
 					gl.uniform1f(programInfo.locations.floorHeight, this.floorReflection.height);
 					gl.uniform1f(programInfo.locations.reflectionOpacity, this.floorReflection.opacity);
 					gl.uniform1f(programInfo.locations.fadeDistance, this.floorReflection.fadeDistance);
-					gl.uniform3f(programInfo.locations.reflectionColor,
+					gl.uniform3f(
+						programInfo.locations.reflectionColor,
 						this.floorReflection.color[0],
 						this.floorReflection.color[1],
-						this.floorReflection.color[2]);
+						this.floorReflection.color[2]
+					);
 
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.normalBuffer);
-					gl.vertexAttribPointer(
-						programInfo.locations.normal,
-						3,
-						gl.FLOAT,
-						false,
-						0,
-						0,
-					);
+					gl.vertexAttribPointer(programInfo.locations.normal, 3, gl.FLOAT, false, 0, 0);
 					gl.enableVertexAttribArray(programInfo.locations.normal);
 
 					if (pass.cull) {
@@ -1233,38 +1284,25 @@ export class PicoCADViewer {
 
 				const useColor = forceColor || !pass.texture;
 				// const programInfo = this._hdTex == null ? ((this.shading && pass.shading) ? this._programTexture : this._programUnlitTexture) : this._programHDTexture;
-				const programInfo = (this._hdTex == null || useColor) ? ((this.shading && pass.shading) ? this._programTexture : this._programUnlitTexture) : this._programHDTexture;
+				const programInfo =
+					this._hdTex == null || useColor
+						? this.shading && pass.shading
+							? this._programTexture
+							: this._programUnlitTexture
+						: this._programHDTexture;
 
 				programInfo.program.use();
 
 				// Uniforms
-				gl.uniformMatrix4fv(
-					programInfo.locations.mvp,
-					false,
-					mat,
-				);
+				gl.uniformMatrix4fv(programInfo.locations.mvp, false, mat);
 
 				// Vertex and UV attrib
 				gl.bindBuffer(gl.ARRAY_BUFFER, pass.vertexBuffer);
-				gl.vertexAttribPointer(
-					programInfo.program.vertexLocation,
-					3,
-					gl.FLOAT,
-					false,
-					0,
-					0,
-				);
+				gl.vertexAttribPointer(programInfo.program.vertexLocation, 3, gl.FLOAT, false, 0, 0);
 				gl.enableVertexAttribArray(programInfo.program.vertexLocation);
 
 				gl.bindBuffer(gl.ARRAY_BUFFER, useColor ? pass.colorUVBuffer : pass.uvBuffer);
-				gl.vertexAttribPointer(
-					programInfo.locations.uv,
-					2,
-					gl.FLOAT,
-					false,
-					0,
-					0,
-				);
+				gl.vertexAttribPointer(programInfo.locations.uv, 2, gl.FLOAT, false, 0, 0);
 				gl.enableVertexAttribArray(programInfo.locations.uv);
 
 				// Shader specific data
@@ -1300,14 +1338,7 @@ export class PicoCADViewer {
 
 					// Normal attrib
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.normalBuffer);
-					gl.vertexAttribPointer(
-						programInfo.locations.normal,
-						3,
-						gl.FLOAT,
-						false,
-						0,
-						0,
-					);
+					gl.vertexAttribPointer(programInfo.locations.normal, 3, gl.FLOAT, false, 0, 0);
 					gl.enableVertexAttribArray(programInfo.locations.normal);
 				} else if (programInfo === this._programHDTexture) {
 					// Main texture
@@ -1331,24 +1362,31 @@ export class PicoCADViewer {
 
 					// HD lighting options
 					gl.uniform1f(programInfo.locations.lightSteps, this.hdOptions.shadingSteps);
-					gl.uniform3f(programInfo.locations.lightAmbient, this.hdOptions.shadingColor[0], this.hdOptions.shadingColor[1], this.hdOptions.shadingColor[2]);
+					gl.uniform3f(
+						programInfo.locations.lightAmbient,
+						this.hdOptions.shadingColor[0],
+						this.hdOptions.shadingColor[1],
+						this.hdOptions.shadingColor[2]
+					);
 
 					// Specular options
-					const spec = this.hdOptions.specular ?? { strength: 1.0, smoothness: 32.0, color: [1, 1, 1] };
+					const spec = this.hdOptions.specular ?? {
+						strength: 1.0,
+						smoothness: 32.0,
+						color: [1, 1, 1]
+					};
 					gl.uniform1f(programInfo.locations.specularStrength, spec.strength);
 					gl.uniform1f(programInfo.locations.specularSmoothness, spec.smoothness);
-					gl.uniform3f(programInfo.locations.specularColor, spec.color[0], spec.color[1], spec.color[2]);
+					gl.uniform3f(
+						programInfo.locations.specularColor,
+						spec.color[0],
+						spec.color[1],
+						spec.color[2]
+					);
 
 					// Normal attrib
 					gl.bindBuffer(gl.ARRAY_BUFFER, pass.normalBuffer);
-					gl.vertexAttribPointer(
-						programInfo.locations.normal,
-						3,
-						gl.FLOAT,
-						false,
-						0,
-						0,
-					);
+					gl.vertexAttribPointer(programInfo.locations.normal, 3, gl.FLOAT, false, 0, 0);
 					gl.enableVertexAttribArray(programInfo.locations.normal);
 				}
 
@@ -1383,21 +1421,14 @@ export class PicoCADViewer {
 			this._programWireframe.program.use();
 
 			// Uniforms
-			gl.uniformMatrix4fv(
-				this._programWireframe.locations.mvp,
-				false,
-				mat,
-			);
+			gl.uniformMatrix4fv(this._programWireframe.locations.mvp, false, mat);
 
-			gl.uniform4fv(
-				this._programWireframe.locations.color,
-				[
-					this.wireframeColor[0],
-					this.wireframeColor[1],
-					this.wireframeColor[2],
-					1
-				],
-			);
+			gl.uniform4fv(this._programWireframe.locations.color, [
+				this.wireframeColor[0],
+				this.wireframeColor[1],
+				this.wireframeColor[2],
+				1
+			]);
 
 			// Bind vertex data
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._wireframe.vertexBuffer);
@@ -1407,7 +1438,7 @@ export class PicoCADViewer {
 				gl.FLOAT,
 				false,
 				0,
-				0,
+				0
 			);
 			gl.enableVertexAttribArray(this._programWireframe.program.vertexLocation);
 
@@ -1451,17 +1482,14 @@ export class PicoCADViewer {
 			gl.uniform4f(outlineProgram.locations.outlineColor2, ...colorTo, 1);
 			gl.uniform1f(outlineProgram.locations.gradient, grad);
 			gl.uniform1f(outlineProgram.locations.gradientDirection, dir);
-			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
+			gl.uniform2f(
+				outlineProgram.locations.pixel,
+				1 / this._resolution[0],
+				1 / this._resolution[1]
+			);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(
-				outlineProgram.program.vertexLocation,
-				2,
-				gl.FLOAT,
-				false,
-				0,
-				0,
-			);
+			gl.vertexAttribPointer(outlineProgram.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
 			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
 
 			for (let i = 0; i < iterations; i++) {
@@ -1495,17 +1523,14 @@ export class PicoCADViewer {
 			gl.uniform4f(outlineProgram.locations.outlineColor2, ...colorTo, 1);
 			gl.uniform1f(outlineProgram.locations.gradient, grad);
 			gl.uniform1f(outlineProgram.locations.gradientDirection, dir);
-			gl.uniform2f(outlineProgram.locations.pixel, 1 / this._resolution[0], 1 / this._resolution[1]);
+			gl.uniform2f(
+				outlineProgram.locations.pixel,
+				1 / this._resolution[0],
+				1 / this._resolution[1]
+			);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(
-				outlineProgram.program.vertexLocation,
-				2,
-				gl.FLOAT,
-				false,
-				0,
-				0,
-			);
+			gl.vertexAttribPointer(outlineProgram.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
 			gl.enableVertexAttribArray(outlineProgram.program.vertexLocation);
 
 			for (let i = 0; i < iterations; i++) {
@@ -1578,20 +1603,48 @@ export class PicoCADViewer {
 
 			// Bloom pass ping pong
 			if (!this._bloomTex1) {
-				this._bloomTex1 = this._createTexture(null, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
+				this._bloomTex1 = this._createTexture(
+					null,
+					gl.RGBA,
+					gl.RGBA,
+					gl.UNSIGNED_BYTE,
+					null,
+					width,
+					height
+				);
 			}
 			if (!this._bloomTex2) {
-				this._bloomTex2 = this._createTexture(null, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, null, width, height);
+				this._bloomTex2 = this._createTexture(
+					null,
+					gl.RGBA,
+					gl.RGBA,
+					gl.UNSIGNED_BYTE,
+					null,
+					width,
+					height
+				);
 			}
 			if (!this._bloomFB1) {
 				this._bloomFB1 = gl.createFramebuffer();
 				gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB1);
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._bloomTex1, 0);
+				gl.framebufferTexture2D(
+					gl.FRAMEBUFFER,
+					gl.COLOR_ATTACHMENT0,
+					gl.TEXTURE_2D,
+					this._bloomTex1,
+					0
+				);
 			}
 			if (!this._bloomFB2) {
 				this._bloomFB2 = gl.createFramebuffer();
 				gl.bindFramebuffer(gl.FRAMEBUFFER, this._bloomFB2);
-				gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this._bloomTex2, 0);
+				gl.framebufferTexture2D(
+					gl.FRAMEBUFFER,
+					gl.COLOR_ATTACHMENT0,
+					gl.TEXTURE_2D,
+					this._bloomTex2,
+					0
+				);
 			}
 
 			// Extract bright areas using threshold
@@ -1668,7 +1721,7 @@ export class PicoCADViewer {
 			gl.uniform2f(progThreshold.locations.resolution, width, height);
 
 			if (!progThreshold.locations.bloomTex) {
-				progThreshold.locations.bloomTex = progThreshold.program.getUniformLocation("bloomTex");
+				progThreshold.locations.bloomTex = progThreshold.program.getUniformLocation('bloomTex');
 			}
 			gl.uniform1i(progThreshold.locations.bloomTex, 1);
 
@@ -1734,7 +1787,22 @@ export class PicoCADViewer {
 			gl.uniform1i(prog.locations.mainTex, 0);
 			gl.uniform1f(prog.locations.pixelSize, this.pixelate.pixelSize);
 			gl.uniform2f(prog.locations.resolution, this._resolution[0], this._resolution[1]);
-			gl.uniform1i(prog.locations.shape, this.pixelate.shape === "hex" ? 1 : this.pixelate.shape === "circle" ? 2 : this.pixelate.shape === "diamond" ? 3 : this.pixelate.shape === "triangle" ? 4 : this.pixelate.shape === "cross" ? 5 : this.pixelate.shape === "star" ? 6 : 0);
+			gl.uniform1i(
+				prog.locations.shape,
+				this.pixelate.shape === 'hex'
+					? 1
+					: this.pixelate.shape === 'circle'
+						? 2
+						: this.pixelate.shape === 'diamond'
+							? 3
+							: this.pixelate.shape === 'triangle'
+								? 4
+								: this.pixelate.shape === 'cross'
+									? 5
+									: this.pixelate.shape === 'star'
+										? 6
+										: 0
+			);
 			gl.uniform1f(prog.locations.blend, this.pixelate.blend);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
@@ -1799,18 +1867,18 @@ export class PicoCADViewer {
 			gl.uniform1f(chromaticProgram.locations.redOffset, this.chromaticAberration.redOffset);
 			gl.uniform1f(chromaticProgram.locations.greenOffset, this.chromaticAberration.greenOffset);
 			gl.uniform1f(chromaticProgram.locations.blueOffset, this.chromaticAberration.blueOffset);
-			gl.uniform1f(chromaticProgram.locations.radialFalloff, this.chromaticAberration.radialFalloff);
-			gl.uniform2f(chromaticProgram.locations.center, this.chromaticAberration.centerX, this.chromaticAberration.centerY);
+			gl.uniform1f(
+				chromaticProgram.locations.radialFalloff,
+				this.chromaticAberration.radialFalloff
+			);
+			gl.uniform2f(
+				chromaticProgram.locations.center,
+				this.chromaticAberration.centerX,
+				this.chromaticAberration.centerY
+			);
 
 			gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-			gl.vertexAttribPointer(
-				chromaticProgram.program.vertexLocation,
-				2,
-				gl.FLOAT,
-				false,
-				0,
-				0
-			);
+			gl.vertexAttribPointer(chromaticProgram.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
 			gl.enableVertexAttribArray(chromaticProgram.program.vertexLocation);
 
 			// Draw to framebuffer.
@@ -1825,15 +1893,21 @@ export class PicoCADViewer {
 		}
 
 		// Record which framebuffer has the most recent render.
-		this._framebufferCurrent = currFrameBufferTex === this._frameBufferTex ? this._frameBuffer : this._frameBuffer2;
+		this._framebufferCurrent =
+			currFrameBufferTex === this._frameBufferTex ? this._frameBuffer : this._frameBuffer2;
 
 		// Draw watermark
 		if (this._watermarkText) {
-
 			if (!this._fontTex) {
 				let img = lazyLoadedFontImage();
 				if (img) {
-					this._fontTex = this._createTexture(this._fontTex, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+					this._fontTex = this._createTexture(
+						this._fontTex,
+						gl.RGBA,
+						gl.RGBA,
+						gl.UNSIGNED_BYTE,
+						img
+					);
 				}
 			}
 
@@ -1844,35 +1918,21 @@ export class PicoCADViewer {
 
 				gl.bindBuffer(gl.ARRAY_BUFFER, this._watermarkBuffer);
 
-				gl.vertexAttribPointer(
-					textProgram.program.vertexLocation,
-					2,
-					gl.FLOAT,
-					false,
-					16,
-					0,
-				);
+				gl.vertexAttribPointer(textProgram.program.vertexLocation, 2, gl.FLOAT, false, 16, 0);
 				gl.enableVertexAttribArray(textProgram.program.vertexLocation);
 
-				gl.vertexAttribPointer(
-					textProgram.locations.uv,
-					2,
-					gl.FLOAT,
-					false,
-					16,
-					8,
-				);
+				gl.vertexAttribPointer(textProgram.locations.uv, 2, gl.FLOAT, false, 16, 8);
 				gl.enableVertexAttribArray(textProgram.locations.uv);
-
 
 				// Set text position.
 				let watermarkPadding = 2;
 
-				gl.uniform4f(textProgram.locations.data,
+				gl.uniform4f(
+					textProgram.locations.data,
 					this._resolution[0] / 2 - this._watermarkSize[0] - watermarkPadding,
 					this._resolution[1] / 2 - this._watermarkSize[1] - watermarkPadding,
 					2 / this._resolution[0],
-					-2 / this._resolution[1],
+					-2 / this._resolution[1]
 				);
 
 				// Set text color.
@@ -1897,7 +1957,13 @@ export class PicoCADViewer {
 					textColor = this._lightMapColors[(this.model.backgroundIndex + 8) % 16];
 				}
 
-				gl.uniform4f(textProgram.locations.color, textColor[0] / 255, textColor[1] / 255, textColor[2] / 255, 1);
+				gl.uniform4f(
+					textProgram.locations.color,
+					textColor[0] / 255,
+					textColor[1] / 255,
+					textColor[2] / 255,
+					1
+				);
 
 				gl.activeTexture(gl.TEXTURE0);
 				gl.bindTexture(gl.TEXTURE_2D, this._fontTex);
@@ -1916,7 +1982,12 @@ export class PicoCADViewer {
 			const bgColor = this._lightMapColors[this.model.backgroundIndex];
 			gl.clearColor(bgColor[0] / 255, bgColor[1] / 255, bgColor[2] / 255, 1);
 		} else {
-			gl.clearColor(this.backgroundColor[0], this.backgroundColor[1], this.backgroundColor[2], this.backgroundColor[3] ?? 1);
+			gl.clearColor(
+				this.backgroundColor[0],
+				this.backgroundColor[1],
+				this.backgroundColor[2],
+				this.backgroundColor[3] ?? 1
+			);
 		}
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -1929,14 +2000,7 @@ export class PicoCADViewer {
 		gl.uniform1i(program.locations.mainTex, 0);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this._screenQuads);
-		gl.vertexAttribPointer(
-			program.program.vertexLocation,
-			2,
-			gl.FLOAT,
-			false,
-			0,
-			0,
-		);
+		gl.vertexAttribPointer(program.program.vertexLocation, 2, gl.FLOAT, false, 0, 0);
 		gl.enableVertexAttribArray(program.program.vertexLocation);
 
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -2000,7 +2064,7 @@ export class PicoCADViewer {
 		this.lightDirection = {
 			x: forward.x - up.x * du,
 			y: forward.y - up.y * du,
-			z: forward.z - up.z * du,
+			z: forward.z - up.z * du
 		};
 	}
 
@@ -2062,13 +2126,13 @@ export class PicoCADViewer {
 		return {
 			x: vec[0],
 			y: vec[1],
-			z: vec[2],
+			z: vec[2]
 		};
 	}
 
 	/**
 	 * Set the camera rotation and position to look at the model a certain radius from the center.
-	 * @param {number} radius 
+	 * @param {number} radius
 	 * @param {number} spin The horizontal position (radians).
 	 * @param {number} roll The vertical position (radians).
 	 * @param {{x: number, y: number, z: number}} [center] Defaults to {x: 0, y: 1.5, z: 0}
@@ -2080,20 +2144,20 @@ export class PicoCADViewer {
 		this.cameraPosition = {
 			x: radius * Math.cos(roll) * Math.sin(a) - center.x,
 			y: radius * Math.sin(roll) - center.y,
-			z: radius * Math.cos(roll) * Math.cos(a) - center.z,
+			z: radius * Math.cos(roll) * Math.cos(a) - center.z
 		};
 		this.cameraRotation = {
 			y: spin,
 			x: -roll,
-			z: 0,
+			z: 0
 		};
 	}
 
 	/**
-	 * Get the rendered pixel data, row-by-row, bottom to top (i.e. upsidedown).  
+	 * Get the rendered pixel data, row-by-row, bottom to top (i.e. upsidedown).
 	 * This data is not up-scaled to match the view scale.
-	 * 
-	 * By default this only works if called right after the frame is drawn (e.g. after `draw()` or in the post draw callback of `startDrawLoop()`).  
+	 *
+	 * By default this only works if called right after the frame is drawn (e.g. after `draw()` or in the post draw callback of `startDrawLoop()`).
 	 * Set `preserveDrawingBuffer: true` in the viewer options to allow calling this method asynchronously.
 	 * @returns {Uint8Array} A new buffer containing the pixel data.
 	 */
@@ -2114,9 +2178,9 @@ export class PicoCADViewer {
 
 	/**
 	 * Get the rendered pixels as PICO-8 indices (row-by-row, top to bottom).
-	 * 
+	 *
 	 * By default this only works if called right after the frame is drawn (e.g. after `draw()` or in the post draw callback of `startDrawLoop()`).
-	 * 
+	 *
 	 * Set `preserveDrawingBuffer: true` in the viewer options to allow calling this method asynchronously.
 	 * @param {number} [scale] Upscale by repeating indices. Defaults to 1.
 	 * @returns {Uint8Array}
@@ -2143,7 +2207,10 @@ export class PicoCADViewer {
 		const paletteIntToIndex = new Map(palette.map((rgb, i) => [rgbToInt(rgb), i]));
 
 		// The framebuffer has a transparent background, so add transparent -> background-color mapping.
-		paletteIntToIndex.set(0, this.backgroundColor ? palette.length - 1 : this.model.backgroundIndex);
+		paletteIntToIndex.set(
+			0,
+			this.backgroundColor ? palette.length - 1 : this.model.backgroundIndex
+		);
 
 		// Convert.
 		// Note the WebGL buffer is top to bottom.
@@ -2266,10 +2333,12 @@ export class PicoCADViewer {
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createTextureProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		attribute vec3 normal;
 		attribute vec2 uv;
@@ -2284,7 +2353,8 @@ function createTextureProgram(gl) {
 			v_uv = uv;
 			gl_Position = mvp * vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		varying highp vec3 v_normal;
 		
@@ -2300,29 +2370,31 @@ function createTextureProgram(gl) {
 			highp float intensity = clamp(lightMapGradient * abs(dot(v_normal, lightDir)) + lightMapOffset, 0.0, 1.0);
 			gl_FragColor = texture2D(lightMap, vec2(0.015625 + index * 15.9375 + mod(gl_FragCoord.x + gl_FragCoord.y, 2.0) * 0.03125, 1.0 - intensity));
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			uv: program.getAttribLocation("uv"),
-			normal: program.getAttribLocation("normal"),
-			indexTex: program.getUniformLocation("indexTex"),
-			lightMap: program.getUniformLocation("lightMap"),
-			lightDir: program.getUniformLocation("lightDir"),
-			mvp: program.getUniformLocation("mvp"),
-			lightMapOffset: program.getUniformLocation("lightMapOffset"),
-			lightMapGradient: program.getUniformLocation("lightMapGradient"),
+			uv: program.getAttribLocation('uv'),
+			normal: program.getAttribLocation('normal'),
+			indexTex: program.getUniformLocation('indexTex'),
+			lightMap: program.getUniformLocation('lightMap'),
+			lightDir: program.getUniformLocation('lightDir'),
+			mvp: program.getUniformLocation('mvp'),
+			lightMapOffset: program.getUniformLocation('lightMapOffset'),
+			lightMapGradient: program.getUniformLocation('lightMapGradient')
 		}
 	};
 }
 
-
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createUnlitTextureProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		attribute vec2 uv;
 
@@ -2334,7 +2406,8 @@ function createUnlitTextureProgram(gl) {
 			v_uv = uv;
 			gl_Position = mvp * vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D indexTex;
@@ -2345,25 +2418,27 @@ function createUnlitTextureProgram(gl) {
 			if (index == 1.0) discard;
 			gl_FragColor = texture2D(lightMap, vec2(0.015625 + index * 15.9375, 0.0));
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			uv: program.getAttribLocation("uv"),
-			mvp: program.getUniformLocation("mvp"),
-			indexTex: program.getUniformLocation("indexTex"),
-			lightMap: program.getUniformLocation("lightMap"),
+			uv: program.getAttribLocation('uv'),
+			mvp: program.getUniformLocation('mvp'),
+			indexTex: program.getUniformLocation('indexTex'),
+			lightMap: program.getUniformLocation('lightMap')
 		}
 	};
 }
 
-
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createHDTextureProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		attribute vec3 normal;
 		attribute vec2 uv;
@@ -2386,7 +2461,8 @@ function createHDTextureProgram(gl) {
 			
 			gl_Position = mvp * vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		varying highp vec3 v_normal;
 		varying highp vec3 v_tangent;
@@ -2429,34 +2505,36 @@ function createHDTextureProgram(gl) {
 
 			gl_FragColor = vec4(mix(col.rgb * lightAmbient, col.rgb, intensity) + specular, 1.0);
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			uv: program.getAttribLocation("uv"),
-			normal: program.getAttribLocation("normal"),
-			mvp: program.getUniformLocation("mvp"),
-			lightSteps: program.getUniformLocation("lightSteps"),
-			lightAmbient: program.getUniformLocation("lightAmbient"),
-			mainTex: program.getUniformLocation("mainTex"),
-			normalMap: program.getUniformLocation("normalMap"),
-			lightDir: program.getUniformLocation("lightDir"),
-			normalMapStrength: program.getUniformLocation("normalMapStrength"),
-			useNormalMap: program.getUniformLocation("useNormalMap"),
-			specularStrength: program.getUniformLocation("specularStrength"),
-			specularSmoothness: program.getUniformLocation("specularSmoothness"),
-			specularColor: program.getUniformLocation("specularColor"),
+			uv: program.getAttribLocation('uv'),
+			normal: program.getAttribLocation('normal'),
+			mvp: program.getUniformLocation('mvp'),
+			lightSteps: program.getUniformLocation('lightSteps'),
+			lightAmbient: program.getUniformLocation('lightAmbient'),
+			mainTex: program.getUniformLocation('mainTex'),
+			normalMap: program.getUniformLocation('normalMap'),
+			lightDir: program.getUniformLocation('lightDir'),
+			normalMapStrength: program.getUniformLocation('normalMapStrength'),
+			useNormalMap: program.getUniformLocation('useNormalMap'),
+			specularStrength: program.getUniformLocation('specularStrength'),
+			specularSmoothness: program.getUniformLocation('specularSmoothness'),
+			specularColor: program.getUniformLocation('specularColor')
 		}
 	};
 }
 
-
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createWireframeProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 
 		uniform mat4 mvp;
@@ -2464,28 +2542,32 @@ function createWireframeProgram(gl) {
 		void main() {
 			gl_Position = mvp * vertex;
 		}
-	`, `
+	`,
+		`
 		uniform lowp vec4 color;
 
 		void main() {
 			gl_FragColor = color;
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			mvp: program.getUniformLocation("mvp"),
-			color: program.getUniformLocation("color"),
+			mvp: program.getUniformLocation('mvp'),
+			color: program.getUniformLocation('color')
 		}
 	};
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createReflectionProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
         attribute vec4 vertex;
         attribute vec3 normal;
         attribute vec2 uv;
@@ -2507,7 +2589,8 @@ function createReflectionProgram(gl) {
             v_distance = abs(vertex.y - floorHeight);
             gl_Position = mvp * reflectedVertex;
         }
-    `, `
+    `,
+		`
         varying highp vec2 v_uv;
         varying highp vec3 v_normal;
         varying highp float v_distance;
@@ -2533,32 +2616,35 @@ function createReflectionProgram(gl) {
 			color.a = 1.0;
             gl_FragColor = color;
         }
-    `);
+    `
+	);
 
 	return {
 		program: program,
 		locations: {
-			uv: program.getAttribLocation("uv"),
-			normal: program.getAttribLocation("normal"),
-			indexTex: program.getUniformLocation("indexTex"),
-			lightMap: program.getUniformLocation("lightMap"),
-			lightDir: program.getUniformLocation("lightDir"),
-			mvp: program.getUniformLocation("mvp"),
-			lightMapOffset: program.getUniformLocation("lightMapOffset"),
-			lightMapGradient: program.getUniformLocation("lightMapGradient"),
-			floorHeight: program.getUniformLocation("floorHeight"),
-			reflectionOpacity: program.getUniformLocation("reflectionOpacity"),
-			fadeDistance: program.getUniformLocation("fadeDistance"),
-			reflectionColor: program.getUniformLocation("reflectionColor")
+			uv: program.getAttribLocation('uv'),
+			normal: program.getAttribLocation('normal'),
+			indexTex: program.getUniformLocation('indexTex'),
+			lightMap: program.getUniformLocation('lightMap'),
+			lightDir: program.getUniformLocation('lightDir'),
+			mvp: program.getUniformLocation('mvp'),
+			lightMapOffset: program.getUniformLocation('lightMapOffset'),
+			lightMapGradient: program.getUniformLocation('lightMapGradient'),
+			floorHeight: program.getUniformLocation('floorHeight'),
+			reflectionOpacity: program.getUniformLocation('reflectionOpacity'),
+			fadeDistance: program.getUniformLocation('fadeDistance'),
+			reflectionColor: program.getUniformLocation('reflectionColor')
 		}
 	};
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createFramebufferProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 
 		varying highp vec2 v_uv;
@@ -2567,7 +2653,8 @@ function createFramebufferProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D mainTex;
@@ -2575,21 +2662,24 @@ function createFramebufferProgram(gl) {
 		void main() {
 			gl_FragColor = texture2D(mainTex, v_uv);
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
+			mainTex: program.getUniformLocation('mainTex')
 		}
 	};
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createOutlineProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 
 		varying highp vec2 v_uv;
@@ -2598,7 +2688,8 @@ function createOutlineProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D mainTex;
@@ -2629,26 +2720,29 @@ function createOutlineProgram(gl) {
 				min(1.0, a * b)
 			);
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			pixel: program.getUniformLocation("pixel"),
-			outlineColor: program.getUniformLocation("outlineColor"),
-			outlineColor2: program.getUniformLocation("outlineColor2"),
-			gradient: program.getUniformLocation("gradient"),
-			gradientDirection: program.getUniformLocation("gradientDirection"),
+			mainTex: program.getUniformLocation('mainTex'),
+			pixel: program.getUniformLocation('pixel'),
+			outlineColor: program.getUniformLocation('outlineColor'),
+			outlineColor2: program.getUniformLocation('outlineColor2'),
+			gradient: program.getUniformLocation('gradient'),
+			gradientDirection: program.getUniformLocation('gradientDirection')
 		}
 	};
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createTextProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec2 vertex;
 		attribute vec2 uv;
 
@@ -2660,7 +2754,8 @@ function createTextProgram(gl) {
 			v_uv = uv;
 			gl_Position = vec4((data.xy + vertex) * data.zw, 0.0, 1.0);
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D mainTex;
@@ -2669,24 +2764,27 @@ function createTextProgram(gl) {
 		void main() {
 			gl_FragColor = texture2D(mainTex, v_uv) * color;
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			uv: program.getAttribLocation("uv"),
-			data: program.getUniformLocation("data"),
-			mainTex: program.getUniformLocation("mainTex"),
-			color: program.getUniformLocation("color"),
+			uv: program.getAttribLocation('uv'),
+			data: program.getUniformLocation('data'),
+			mainTex: program.getUniformLocation('mainTex'),
+			color: program.getUniformLocation('color')
 		}
 	};
 }
 
 /**
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContext} gl
  */
 function createChromaticAberrationProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 
 		varying highp vec2 v_uv;
@@ -2695,7 +2793,8 @@ function createChromaticAberrationProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D mainTex;
@@ -2723,19 +2822,20 @@ function createChromaticAberrationProgram(gl) {
             highp float alpha = (r.a + g.a + b.a) / 3.0;
 			gl_FragColor = vec4(r.r * alpha, g.g * alpha, b.b * alpha, 1.0);
 		}
-	`);
+	`
+	);
 
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			resolution: program.getUniformLocation("resolution"),
-			amount: program.getUniformLocation("amount"),
-			redOffset: program.getUniformLocation("redOffset"),
-			greenOffset: program.getUniformLocation("greenOffset"),
-			blueOffset: program.getUniformLocation("blueOffset"),
-			radialFalloff: program.getUniformLocation("radialFalloff"),
-			center: program.getUniformLocation("center"),
+			mainTex: program.getUniformLocation('mainTex'),
+			resolution: program.getUniformLocation('resolution'),
+			amount: program.getUniformLocation('amount'),
+			redOffset: program.getUniformLocation('redOffset'),
+			greenOffset: program.getUniformLocation('greenOffset'),
+			blueOffset: program.getUniformLocation('blueOffset'),
+			radialFalloff: program.getUniformLocation('radialFalloff'),
+			center: program.getUniformLocation('center')
 		}
 	};
 }
@@ -2744,7 +2844,9 @@ function createChromaticAberrationProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createColorGradeProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -2752,7 +2854,8 @@ function createColorGradeProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
@@ -2808,15 +2911,16 @@ function createColorGradeProgram(gl) {
 			col.rgb = hsv2rgb(hsv);
 			gl_FragColor = col;
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			brightness: program.getUniformLocation("brightness"),
-			contrast: program.getUniformLocation("contrast"),
-			saturation: program.getUniformLocation("saturation"),
-			hue: program.getUniformLocation("hue"),
+			mainTex: program.getUniformLocation('mainTex'),
+			brightness: program.getUniformLocation('brightness'),
+			contrast: program.getUniformLocation('contrast'),
+			saturation: program.getUniformLocation('saturation'),
+			hue: program.getUniformLocation('hue')
 		}
 	};
 }
@@ -2825,14 +2929,17 @@ function createColorGradeProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createPosterizeProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
         attribute vec4 vertex;
         varying highp vec2 v_uv;
         void main() {
             v_uv = 0.5 + vertex.xy * 0.5;
             gl_Position = vertex;
         }
-    `, `
+    `,
+		`
         varying highp vec2 v_uv;
 
         uniform sampler2D mainTex;
@@ -2860,17 +2967,18 @@ function createPosterizeProgram(gl) {
             
             gl_FragColor = col;
         }
-    `);
+    `
+	);
 
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			levels: program.getUniformLocation("levels"),
-			channelLevels: program.getUniformLocation("channelLevels"),
-			gamma: program.getUniformLocation("gamma"),
-			edgePreserve: program.getUniformLocation("edgePreserve"),
-			colorBanding: program.getUniformLocation("colorBanding")
+			mainTex: program.getUniformLocation('mainTex'),
+			levels: program.getUniformLocation('levels'),
+			channelLevels: program.getUniformLocation('channelLevels'),
+			gamma: program.getUniformLocation('gamma'),
+			edgePreserve: program.getUniformLocation('edgePreserve'),
+			colorBanding: program.getUniformLocation('colorBanding')
 		}
 	};
 }
@@ -2879,7 +2987,9 @@ function createPosterizeProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createNoiseProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
         attribute vec4 vertex;
         varying highp vec2 v_uv;
 
@@ -2887,7 +2997,8 @@ function createNoiseProgram(gl) {
             v_uv = 0.5 + vertex.xy * 0.5;
             gl_Position = vertex;
         }
-    `, `
+    `,
+		`
         varying highp vec2 v_uv;
 
         uniform sampler2D mainTex;
@@ -2904,13 +3015,14 @@ function createNoiseProgram(gl) {
             
             gl_FragColor = col;
         }
-    `);
+    `
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			amount: program.getUniformLocation("amount"),
-			time: program.getUniformLocation("time"),
+			mainTex: program.getUniformLocation('mainTex'),
+			amount: program.getUniformLocation('amount'),
+			time: program.getUniformLocation('time')
 		}
 	};
 }
@@ -2919,7 +3031,9 @@ function createNoiseProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createBloomProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -2927,7 +3041,8 @@ function createBloomProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
@@ -2955,16 +3070,17 @@ function createBloomProgram(gl) {
 				}
 			}
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			bloomTex: program.getUniformLocation("bloomTex"),
-			threshold: program.getUniformLocation("threshold"),
-			intensity: program.getUniformLocation("intensity"),
-			blur: program.getUniformLocation("blur"),
-			resolution: program.getUniformLocation("resolution"),
+			mainTex: program.getUniformLocation('mainTex'),
+			bloomTex: program.getUniformLocation('bloomTex'),
+			threshold: program.getUniformLocation('threshold'),
+			intensity: program.getUniformLocation('intensity'),
+			blur: program.getUniformLocation('blur'),
+			resolution: program.getUniformLocation('resolution')
 		}
 	};
 }
@@ -2974,14 +3090,17 @@ function createBloomProgram(gl) {
  * @param {boolean} horizontal
  */
 function createBloomBlurProgram(gl, horizontal) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
         attribute vec4 vertex;
         varying highp vec2 v_uv;
         void main() {
             v_uv = 0.5 + vertex.xy * 0.5;
             gl_Position = vertex;
         }
-    `, `
+    `,
+		`
         varying highp vec2 v_uv;
 
         uniform sampler2D mainTex;
@@ -2999,7 +3118,7 @@ function createBloomBlurProgram(gl, horizontal) {
             weights[3] = 0.054054;
             weights[4] = 0.016216;
 
-            highp vec2 offset = vec2(${horizontal ? "blur * texel.x" : "0.0"}, ${horizontal ? "0.0" : "blur * texel.y"});
+            highp vec2 offset = vec2(${horizontal ? 'blur * texel.x' : '0.0'}, ${horizontal ? '0.0' : 'blur * texel.y'});
             result += texture2D(mainTex, v_uv) * weights[0];
 
             for (int i = 1; i < 5; ++i) {
@@ -3009,13 +3128,14 @@ function createBloomBlurProgram(gl, horizontal) {
 
             gl_FragColor = result;
         }
-    `);
+    `
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			blur: program.getUniformLocation("blur"),
-			resolution: program.getUniformLocation("resolution"),
+			mainTex: program.getUniformLocation('mainTex'),
+			blur: program.getUniformLocation('blur'),
+			resolution: program.getUniformLocation('resolution')
 		}
 	};
 }
@@ -3024,7 +3144,9 @@ function createBloomBlurProgram(gl, horizontal) {
  * @param {WebGLRenderingContext} gl
  */
 function createDitherProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -3032,7 +3154,8 @@ function createDitherProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
@@ -3077,15 +3200,16 @@ function createDitherProgram(gl) {
 
 			gl_FragColor = vec4(mix(orig.rgb, col.rgb, clamp(blend, 0.0, 1.0)), orig.a);
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			amount: program.getUniformLocation("amount"),
-			resolution: program.getUniformLocation("resolution"),
-			blend: program.getUniformLocation("blend"),
-			channelAmount: program.getUniformLocation("channelAmount"),
+			mainTex: program.getUniformLocation('mainTex'),
+			amount: program.getUniformLocation('amount'),
+			resolution: program.getUniformLocation('resolution'),
+			blend: program.getUniformLocation('blend'),
+			channelAmount: program.getUniformLocation('channelAmount')
 		}
 	};
 }
@@ -3094,7 +3218,9 @@ function createDitherProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createCRTProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -3102,7 +3228,8 @@ function createCRTProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
@@ -3124,14 +3251,15 @@ function createCRTProgram(gl) {
 			col.rgb *= mix(1.0, scan, scanlineIntensity);
 			gl_FragColor = col;
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			curvature: program.getUniformLocation("curvature"),
-			scanlineIntensity: program.getUniformLocation("scanlineIntensity"),
-			resolution: program.getUniformLocation("resolution"),
+			mainTex: program.getUniformLocation('mainTex'),
+			curvature: program.getUniformLocation('curvature'),
+			scanlineIntensity: program.getUniformLocation('scanlineIntensity'),
+			resolution: program.getUniformLocation('resolution')
 		}
 	};
 }
@@ -3140,7 +3268,9 @@ function createCRTProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createPixelateProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -3148,7 +3278,8 @@ function createPixelateProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 
 		uniform sampler2D mainTex;
@@ -3291,15 +3422,16 @@ function createPixelateProgram(gl) {
 			highp vec4 orig = texture2D(mainTex, uv);
 			gl_FragColor = vec4(mix(orig, col, clamp(blend, 0.0, 1.0)).rgb, 1.0);
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			pixelSize: program.getUniformLocation("pixelSize"),
-			resolution: program.getUniformLocation("resolution"),
-			shape: program.getUniformLocation("shape"),
-			blend: program.getUniformLocation("blend"),
+			mainTex: program.getUniformLocation('mainTex'),
+			pixelSize: program.getUniformLocation('pixelSize'),
+			resolution: program.getUniformLocation('resolution'),
+			shape: program.getUniformLocation('shape'),
+			blend: program.getUniformLocation('blend')
 		}
 	};
 }
@@ -3308,7 +3440,9 @@ function createPixelateProgram(gl) {
  * @param {WebGLRenderingContext} gl
  */
 function createLensDistortionProgram(gl) {
-	const program = new ShaderProgram(gl, `
+	const program = new ShaderProgram(
+		gl,
+		`
 		attribute vec4 vertex;
 		varying highp vec2 v_uv;
 
@@ -3316,7 +3450,8 @@ function createLensDistortionProgram(gl) {
 			v_uv = 0.5 + vertex.xy * 0.5;
 			gl_Position = vertex;
 		}
-	`, `
+	`,
+		`
 		varying highp vec2 v_uv;
 		
 		uniform sampler2D mainTex;
@@ -3343,20 +3478,21 @@ function createLensDistortionProgram(gl) {
 				gl_FragColor = texture2D(mainTex, sampleUV);
 			}
 		}
-	`);
+	`
+	);
 	return {
 		program: program,
 		locations: {
-			mainTex: program.getUniformLocation("mainTex"),
-			strength: program.getUniformLocation("strength"),
-			zoom: program.getUniformLocation("zoom"),
-			resolution: program.getUniformLocation("resolution"),
+			mainTex: program.getUniformLocation('mainTex'),
+			strength: program.getUniformLocation('strength'),
+			zoom: program.getUniformLocation('zoom'),
+			resolution: program.getUniformLocation('resolution')
 		}
 	};
 }
 
 /**
- * @param {{x: number, y: number, z: number}} vec 
+ * @param {{x: number, y: number, z: number}} vec
  */
 function normalized(vec) {
 	let len = Math.hypot(vec.x, vec.y, vec.z);
@@ -3364,7 +3500,7 @@ function normalized(vec) {
 	return {
 		x: vec.x / len,
 		y: vec.y / len,
-		z: vec.z / len,
+		z: vec.z / len
 	};
 }
 
