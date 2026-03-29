@@ -50,7 +50,7 @@ export const actions = {
 			const user = checkUserAuthentication(locals);
 			if (!user.success) return user.error;
 
-			const { shorthandName, displayName, creator, notes, gif, png, avif } = result.output;
+			const { shorthandName, displayName, creator, notes, gif, avif } = result.output;
 			const username = locals.user.name;
 			const headers = createGitHubHeaders(locals.user.token);
 
@@ -94,7 +94,6 @@ export const actions = {
 			await updateBadgesFile(username, shorthandName, newBadgeFile, forkBadgesJson.sha, headers);
 
 			await uploadFile(username, `${shorthandName}.gif`, shorthandName, headers, gif);
-			await uploadFile(username, `${shorthandName}.png`, shorthandName, headers, png);
 			await uploadFile(username, `${shorthandName}.avif`, shorthandName, headers, avif);
 
 			const prJson = await createPullRequest(
@@ -137,7 +136,7 @@ export const actions = {
 			const user = checkUserAuthentication(locals);
 			if (!user.success) return user.error;
 
-			const { shorthandName, displayName, creator, gif, png, avif, updateType, updateName, prUrl } =
+			const { shorthandName, displayName, creator, gif, avif, updateType, updateName, prUrl } =
 				result.output;
 
 			const username = locals.user.name;
@@ -215,7 +214,6 @@ export const actions = {
 				delete badgesJson[updateName];
 
 				await deleteFile(username, `${updateName}.gif`, branchName, headers);
-				await deleteFile(username, `${updateName}.png`, branchName, headers);
 				await deleteFile(username, `${updateName}.avif`, branchName, headers);
 			}
 
@@ -232,7 +230,6 @@ export const actions = {
 			await updateBadgesFile(username, branchName, newBadgeFile, badgesFile.sha, headers);
 
 			await uploadFile(username, `${shorthandName}.gif`, branchName, headers, gif);
-			await uploadFile(username, `${shorthandName}.png`, branchName, headers, png);
 			await uploadFile(username, `${shorthandName}.avif`, branchName, headers, avif);
 
 			return {
