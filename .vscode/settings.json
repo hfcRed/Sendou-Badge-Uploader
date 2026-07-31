@@ -4,7 +4,6 @@
 		"editor.defaultFormatter": "svelte.svelte-vscode"
 	},
 	"explorer.sortOrder": "filesFirst",
-	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.expand": false,
 	"explorer.fileNesting.patterns": {
 		"+layout.svelte": "+layout.server.ts,+layout.server.js,+layout.ts,+layout.js,+layout.gql",
